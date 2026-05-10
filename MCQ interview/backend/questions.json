@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "question": "What is time complexity of binary search?",
+    "options": ["O(n)", "O(log n)", "O(n log n)", "O(1)"],
+    "answer": "O(log n)"
+  },
+  {
+    "id": 2,
+    "question": "Which of the following is not a React Hook?",
+    "options": ["useState", "useEffect", "useContext", "useFetch"],
+    "answer": "useFetch"
+  },
+  {
+    "id": 3,
+    "question": "What does CSS stand for?",
+    "options": ["Cascading Style Sheets", "Computer Style Sheets", "Creative Style Sheets", "Colorful Style Sheets"],
+    "answer": "Cascading Style Sheets"
+  },
+  {
+    "id": 4,
+    "question": "Which programming language is known as the 'mother of all languages'?",
+    "options": ["Java", "C", "Python", "Assembly"],
+    "answer": "C"
+  },
+  {
+    "id": 5,
+    "question": "What is the primary function of the Flask framework?",
+    "options": ["Data Analysis", "Game Development", "Web Development", "Machine Learning"],
+    "answer": "Web Development"
+  }
+]

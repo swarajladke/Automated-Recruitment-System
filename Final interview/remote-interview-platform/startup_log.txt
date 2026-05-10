@@ -1,0 +1,14 @@
+
+> codesync@0.1.0 dev
+> next dev -p 3001
+
+  ▲ Next.js 14.2.23
+  - Local:        http://localhost:3001
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.3s
+ ○ Compiling / ...
+ ✓ Compiled / in 3.8s (1603 modules)
+ GET / 200 in 4239ms
+ ✓ Compiled in 628ms (717 modules)
