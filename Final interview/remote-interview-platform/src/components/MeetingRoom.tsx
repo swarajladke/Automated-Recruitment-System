@@ -508,22 +508,6 @@ function StandardMeetingRoom() {
         </ResizablePanelGroup>
       </div>
     </div>
-
-    {/* FLOATING CAMERA TERMINAL */}
-    <div className="fixed bottom-10 right-10 z-[100] w-64 h-40 bg-[#161b22]/80 backdrop-blur-xl rounded-2xl border-2 border-white/5 shadow-2xl overflow-hidden group">
-      <div className="absolute top-3 left-3 flex items-center gap-2 z-10">
-        <div className="size-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_#ef4444]" />
-        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Live Proctor</span>
-      </div>
-      <video 
-        ref={videoRef} 
-        autoPlay 
-        playsInline 
-        muted 
-        className="size-full object-cover scale-x-[-1] opacity-60 group-hover:opacity-100 transition-opacity" 
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
-    </div>
     </>
   );
 }
