@@ -29,6 +29,7 @@ export const adminService = {
   addJob: (data) => api.post('/admin/jobs', data),
   deleteJob: (id) => api.delete(`/admin/jobs/${id}`),
   initDefaultJobs: () => api.post('/admin/jobs/init-defaults'),
+  scheduleInterview: (data) => api.post('/admin/schedule-interview', data),
 };
 
 export const messageService = {

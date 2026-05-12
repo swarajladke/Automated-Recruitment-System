@@ -25,10 +25,17 @@ const JobsPage = () => {
   const [isApplying, setIsApplying] = useState(false);
   const [isScreening, setIsScreening] = useState(false);
   const [screeningStatus, setScreeningStatus] = useState(null); // 'PASS' or 'FAIL'
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  
+  const [appliedRoles, setAppliedRoles] = useState([]);
   
   React.useEffect(() => {
     fetchJobs();
-  }, []);
+    if (user && user.role === 'candidate') {
+      fetchAppliedRoles();
+    }
+  }, [user]);
 
   const fetchJobs = async () => {
     try {
@@ -38,6 +45,16 @@ const JobsPage = () => {
       console.error(err);
     } finally {
       setLoadingJobs(false);
+    }
+  };
+
+  const fetchAppliedRoles = async () => {
+    try {
+      const res = await candidateService.getStatus(user.id);
+      const roles = res.data.applications?.map(app => app.applied_role) || [];
+      setAppliedRoles(roles);
+    } catch (err) {
+      console.error("Failed to fetch applied roles:", err);
     }
   };
 
@@ -60,6 +77,10 @@ const JobsPage = () => {
       alert("Admins cannot apply for jobs.");
       return;
     }
+    if (appliedRoles.includes(job.title)) {
+      alert("You have already applied for this position.");
+      return;
+    }
     setAppliedJob(job);
     setFormData(prev => ({
       ...prev,
@@ -67,6 +88,11 @@ const JobsPage = () => {
       email: user?.email || ''
     }));
     setShowForm(true);
+  };
+
+  const handleViewDetails = (job) => {
+    setSelectedJob(job);
+    setShowDetails(true);
   };
   
   const handleFormSubmit = async (e) => {
@@ -93,11 +119,20 @@ const JobsPage = () => {
           sessionStorage.setItem('pending_application', JSON.stringify(applicationData));
         }
       } else {
-        await candidateService.apply({ candidate_id: user.id, ...applicationData });
+        const res = await candidateService.apply({ candidate_id: user.id, ...applicationData });
+        // Handle backend ALREADY_APPLIED message if it somehow gets past frontend check
+        if (res.data.status === 'ALREADY_APPLIED') {
+          alert(res.data.message);
+          setShowForm(false);
+          return;
+        }
       }
 
       setScreeningStatus(status);
       setShowForm(false);
+      
+      // Refresh applied roles
+      if (user) fetchAppliedRoles();
       
       // Start Screening Animation
       setIsScreening(true);
@@ -107,8 +142,13 @@ const JobsPage = () => {
       }, 5000);
 
     } catch (err) {
-      console.error("Application failed:", err);
-      alert("System busy. Please try again later.");
+      if (err.response?.data?.status === 'ALREADY_APPLIED') {
+        alert(err.response.data.message);
+        setShowForm(false);
+      } else {
+        console.error("Application failed:", err);
+        alert("System busy. Please try again later.");
+      }
     } finally {
       setIsApplying(false);
     }
@@ -155,7 +195,9 @@ const JobsPage = () => {
                 key={job.id} 
                 job={job} 
                 onApply={() => handleApplyClick(job)} 
+                onViewDetails={() => handleViewDetails(job)}
                 isApplying={isApplying && appliedJob?.id === job.id}
+                isApplied={appliedRoles.includes(job.title)}
                 isAdmin={user?.role === 'admin'}
                 navigate={navigate}
               />
@@ -163,6 +205,51 @@ const JobsPage = () => {
           </div>
         </div>
       </section>
+
+      {/* Job Details Modal */}
+      {showDetails && selectedJob && (
+        <div style={modalOverlayStyle}>
+          <Card style={{ ...formCardStyle, maxWidth: '750px', padding: 0, overflow: 'hidden' }}>
+            <div style={{ position: 'relative', height: '130px', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', padding: '2rem' }}>
+              <button onClick={() => setShowDetails(false)} style={{ ...closeBtnStyle, color: 'white', position: 'absolute', top: '1.25rem', right: '1.25rem' }}><X /></button>
+              <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: 'var(--primary)', fontSize: '0.7rem', fontWeight: '800', padding: '0.3rem 0.75rem', borderRadius: '2rem', textTransform: 'uppercase', marginBottom: '0.75rem', display: 'inline-block', border: '1px solid rgba(16, 185, 129, 0.3)' }}>{selectedJob.dept}</span>
+              <h2 style={{ color: 'white', fontSize: '1.75rem' }}>{selectedJob.title}</h2>
+            </div>
+            
+            <div style={{ padding: '2rem', display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '2.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div>
+                  <h4 style={{ fontSize: '1rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FileText size={16} color="var(--primary)" /> Role Description</h4>
+                  <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', fontSize: '0.95rem' }}>
+                    We are looking for a highly motivated {selectedJob.title} to join our core team in the {selectedJob.dept} department.
+                  </p>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '1rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Award size={16} color="var(--primary)" /> Key Requirements</h4>
+                  <ul style={{ color: 'var(--text-muted)', paddingLeft: '1.1rem', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.9rem' }}>
+                    <li>3+ years of professional experience in {selectedJob.dept}.</li>
+                    <li>Strong proficiency in modern technical stacks.</li>
+                    <li>Excellent communication and problem-solving skills.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingLeft: '1.5rem', borderLeft: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                  <DetailItem icon={<MapPin size={14} />} label="Location" value={selectedJob.location} />
+                  <DetailItem icon={<Briefcase size={14} />} label="Type" value={selectedJob.type} />
+                  <DetailItem icon={<DollarSign size={14} />} label="Salary" value={selectedJob.salary} />
+                </div>
+                <div style={{ marginTop: 'auto' }}>
+                  <Button style={{ width: '100%', padding: '0.85rem' }} onClick={() => { setShowDetails(false); handleApplyClick(selectedJob); }}>
+                    Apply Now
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* AI Screening Loading Overlay */}
       {isScreening && (
@@ -321,6 +408,16 @@ const JobsPage = () => {
   );
 };
 
+const DetailItem = ({ icon, label, value }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+    <div style={{ color: 'var(--primary)' }}>{icon}</div>
+    <div>
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ fontWeight: '600', color: 'var(--text-main)' }}>{value}</div>
+    </div>
+  </div>
+);
+
 const modalOverlayStyle = {
   position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
   background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(8px)',
@@ -336,7 +433,7 @@ const labelStyle = { fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-
 const inputStyle = { padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1px solid var(--border)', outline: 'none', fontSize: '0.95rem' };
 const uploadBoxStyle = { border: '2px dashed var(--border)', borderRadius: '1rem', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#f8fafc', transition: 'all 0.2s' };
 
-const JobCard = ({ job, onApply, isApplying, isAdmin, navigate }) => (
+const JobCard = ({ job, onApply, onViewDetails, isApplying, isApplied, isAdmin, navigate }) => (
   <Card style={{ padding: '2rem', transition: 'all 0.3s', border: '1px solid var(--border)' }} className="job-card">
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
       <div style={{ flex: 1 }}>
@@ -360,13 +457,20 @@ const JobCard = ({ job, onApply, isApplying, isAdmin, navigate }) => (
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <Button variant="outline" style={{ padding: '0.75rem 1.5rem' }}>View Details</Button>
+        <Button variant="outline" style={{ padding: '0.75rem 1.5rem' }} onClick={onViewDetails}>View Details</Button>
         {isAdmin ? (
           <Button 
             style={{ padding: '0.75rem 2rem', background: '#f8fafc', color: 'var(--text-main)', border: '1px solid var(--border)' }} 
             onClick={() => navigate('/admin')}
           >
             Manage Job
+          </Button>
+        ) : isApplied ? (
+          <Button 
+            disabled 
+            style={{ padding: '0.75rem 2rem', background: '#ecfdf5', color: 'var(--primary)', border: '1px solid #d1fae5', cursor: 'not-allowed' }}
+          >
+            <CheckCircle size={16} style={{ marginRight: '0.5rem' }} /> Applied
           </Button>
         ) : (
           <Button style={{ padding: '0.75rem 2rem' }} onClick={onApply} disabled={isApplying}>

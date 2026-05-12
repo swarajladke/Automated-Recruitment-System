@@ -38,60 +38,57 @@ const InterviewCard = async ({
   ).format("MMM D, YYYY");
 
   return (
-    <div className="card-border w-[360px] max-sm:w-full min-h-96">
-      <div className="card-interview">
-        <div>
-          {/* Type Badge */}
-          <div
-            className={cn(
-              "absolute top-0 right-0 w-fit px-4 py-2 rounded-bl-lg",
-              badgeColor
-            )}
-          >
-            <p className="badge-text ">{normalizedType}</p>
-          </div>
+    <div className="card-border w-full max-w-2xl group transition-all duration-500 hover:scale-[1.01]">
+      <div className="card-interview bg-[#0f172a]/40 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-10 flex flex-col gap-10 shadow-2xl relative overflow-hidden">
+        {/* Animated Background Pulse */}
+        <div className="absolute -top-32 -right-32 size-64 bg-emerald-500/5 blur-[100px] rounded-full group-hover:bg-emerald-500/10 transition-colors" />
 
-          {/* Cover Image */}
-          <Image
-            src={getRandomInterviewCover()}
-            alt="cover-image"
-            width={90}
-            height={90}
-            className="rounded-full object-fit size-[90px]"
-          />
-
-          {/* Interview Role */}
-          <h3 className="mt-5 capitalize">{role} Interview</h3>
-
-          {/* Date & Score */}
-          <div className="flex flex-row gap-5 mt-3">
-            <div className="flex flex-row gap-2">
-              <Image
-                src="/calendar.svg"
-                width={22}
-                height={22}
-                alt="calendar"
-              />
-              <p>{formattedDate}</p>
+        <div className="relative z-10 flex flex-col gap-8">
+          <div className="flex flex-col gap-4">
+            {/* Type Badge - Now Relative and Professional */}
+            <div
+              className={cn(
+                "w-fit px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.25em] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20",
+                badgeColor
+              )}
+            >
+              {normalizedType}
             </div>
 
-            <div className="flex flex-row gap-2 items-center">
-              <Image src="/star.svg" width={22} height={22} alt="star" />
-              <p>{feedback?.totalScore || "---"}/100</p>
+            {/* Interview Role */}
+            <h3 className="text-3xl font-black text-white leading-tight tracking-tighter group-hover:text-emerald-400 transition-colors capitalize">
+              {role}
+            </h3>
+          </div>
+
+          {/* Date & Score */}
+          <div className="flex items-center gap-6 mt-6 pb-6 border-b border-white/5">
+            <div className="flex items-center gap-2">
+              <div className="size-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/10">
+                <Image src="/calendar.svg" width={16} height={16} alt="Date" className="opacity-60" />
+              </div>
+              <span className="text-xs font-bold text-white/40 tracking-wider uppercase">{formattedDate}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="size-8 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20">
+                <Image src="/star.svg" width={16} height={16} alt="Score" />
+              </div>
+              <span className="text-sm font-black text-emerald-500">{feedback?.totalScore || "--"}<span className="text-[10px] text-white/20 ml-1">/100</span></span>
             </div>
           </div>
 
           {/* Feedback or Placeholder Text */}
-          <p className="line-clamp-2 mt-5">
+          <p className="text-sm leading-relaxed text-white/50 mt-6 font-medium line-clamp-3">
             {feedback?.finalAssessment ||
-              "You haven't taken this interview yet. Take it now to improve your skills."}
+              "Official AI assessment for your current application. Complete this session to progress to the next stage of the recruitment process."}
           </p>
         </div>
 
-        <div className="flex flex-row justify-between">
+        <div className="relative z-10 flex items-center justify-between mt-auto pt-4">
           <DisplayTechIcons techStack={techstack} />
 
-          <Button className="btn-primary">
+          <Button asChild className="btn-primary px-6 py-5 text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20">
             <Link
               href={
                 feedback
@@ -99,7 +96,7 @@ const InterviewCard = async ({
                   : `/interview/${interviewId}`
               }
             >
-              {feedback ? "Check Feedback" : "View Interview"}
+              {feedback ? "Analyze Report" : "Begin Session"}
             </Link>
           </Button>
         </div>

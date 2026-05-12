@@ -196,11 +196,9 @@ export const interviewCovers = [
   "/hostinger.png",
   "/pinterest.png",
   "/quora.png",
-  "/reddit.png",
   "/skype.png",
   "/spotify.png",
   "/telegram.png",
-  "/tiktok.png",
   "/yahoo.png",
 ];
 

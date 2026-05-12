@@ -57,6 +57,27 @@ const AdminDashboard = () => {
     maintenanceMode: false
   });
 
+  // Scheduling State
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [interviewTime, setInterviewTime] = useState('');
+  const [schedulingCandidate, setSchedulingCandidate] = useState(null);
+
+  const handleScheduleInterview = async () => {
+    if (!interviewTime) return alert("Please enter a time");
+    try {
+      await adminService.scheduleInterview({ 
+        application_id: schedulingCandidate.application_id, 
+        interview_time: interviewTime 
+      });
+      setShowScheduleModal(false);
+      setInterviewTime('');
+      fetchCandidates();
+      alert("Final Technical Round scheduled and candidate notified!");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -235,10 +256,10 @@ const AdminDashboard = () => {
   };
 
   const pipeline = {
-    applied: candidates.filter(c => c.status === 'APPLIED').length,
-    mcq: candidates.filter(c => c.status === 'MCQ_CLEARED').length,
-    ai: candidates.filter(c => c.status === 'AI_CLEARED').length,
-    coding: candidates.filter(c => c.status === 'CODING_CLEARED').length,
+    applied: candidates.filter(c => c.status !== 'REJECTED').length,
+    mcq: candidates.filter(c => ['MCQ_CLEARED', 'AI_CLEARED', 'INTERVIEW_SCHEDULED', 'CODING_CLEARED', 'SELECTED'].includes(c.status)).length,
+    ai: candidates.filter(c => ['AI_CLEARED', 'INTERVIEW_SCHEDULED', 'CODING_CLEARED', 'SELECTED'].includes(c.status)).length,
+    coding: candidates.filter(c => ['CODING_CLEARED', 'SELECTED'].includes(c.status)).length,
     selected: candidates.filter(c => c.status === 'SELECTED').length,
   };
 
@@ -830,11 +851,24 @@ const AdminDashboard = () => {
 
             <div style={{ background: '#f8fafc', borderRadius: '1rem', padding: '1.5rem', marginBottom: '2rem', border: '1px solid var(--border)' }}>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem', textTransform: 'uppercase', fontWeight: '800' }}>Assessment Results</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
                 <ScoreMini label="MCQ" score={selectedCandidate.scores.mcq} />
                 <ScoreMini label="AI Video" score={selectedCandidate.scores.ai} />
                 <ScoreMini label="Coding" score={selectedCandidate.scores.coding} />
               </div>
+
+              {selectedCandidate.scores.coding_details && (
+                <div style={{ borderTop: '1px dashed var(--border)', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>Questions Solved</div>
+                    <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)' }}>{selectedCandidate.scores.coding_details.solved} / 2</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>Test Cases Passed</div>
+                    <div style={{ fontSize: '1rem', fontWeight: '800', color: '#10b981' }}>{selectedCandidate.scores.coding_details.test_cases} Total</div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ marginBottom: '2rem', padding: '1.5rem', borderRadius: '1rem', background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)', border: '1px solid #d1fae5' }}>
@@ -903,23 +937,71 @@ const AdminDashboard = () => {
               </form>
             </div>
 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {selectedCandidate.status === 'AI_CLEARED' && (
+                <Button 
+                  onClick={() => {
+                    setSchedulingCandidate(selectedCandidate);
+                    setShowScheduleModal(true);
+                  }}
+                  style={{ background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1rem' }}
+                >
+                  Schedule Final Technical Round
+                </Button>
+              )}
+
+              {selectedCandidate.status === 'INTERVIEW_SCHEDULED' && (
+                <Button 
+                  onClick={() => window.open(`http://localhost:3001?candidate_id=${selectedCandidate.id}&application_id=${selectedCandidate.application_id}&role=admin`, '_blank')}
+                  style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1rem', border: 'none' }}
+                >
+                  Join Live Interview Room
+                </Button>
+              )}
+              
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <Button 
+                  variant="primary" 
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1rem' }}
+                  disabled={selectedCandidate.status === 'REJECTED' || selectedCandidate.status === 'SELECTED'}
+                  onClick={() => handleUpdateStatus(selectedCandidate.application_id, 'SELECTED')}
+                >
+                  <UserCheck size={20} /> Hire Candidate
+                </Button>
+                <Button 
+                  variant="outline" 
+                  style={{ flex: 1, borderColor: '#ef4444', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  disabled={selectedCandidate.status === 'REJECTED' || selectedCandidate.status === 'SELECTED'}
+                  onClick={() => handleUpdateStatus(selectedCandidate.application_id, 'REJECTED')}
+                >
+                  <UserX size={20} /> Reject
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {showScheduleModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Card style={{ maxWidth: '400px', width: '90%', padding: '2.5rem' }}>
+            <h3 style={{ marginBottom: '1.5rem', fontWeight: '800' }}>Schedule Final Interview</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Set a date and time for the live technical coding round with {schedulingCandidate?.name}.</p>
+            
+            <div style={{ marginBottom: '2rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', marginBottom: '0.5rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Interview Date & Time</label>
+              <input 
+                type="text" 
+                placeholder="e.g., May 24th, 2:00 PM"
+                value={interviewTime}
+                onChange={(e) => setInterviewTime(e.target.value)}
+                style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1px solid var(--border)', outline: 'none' }}
+              />
+            </div>
+
             <div style={{ display: 'flex', gap: '1rem' }}>
-              <Button 
-                variant="primary" 
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1rem' }}
-                disabled={selectedCandidate.status === 'REJECTED' || selectedCandidate.status === 'SELECTED'}
-                onClick={() => handleUpdateStatus(selectedCandidate.application_id, 'SELECTED')}
-              >
-                <UserCheck size={20} /> Hire Candidate
-              </Button>
-              <Button 
-                variant="outline" 
-                style={{ flex: 1, borderColor: '#ef4444', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                disabled={selectedCandidate.status === 'REJECTED' || selectedCandidate.status === 'SELECTED'}
-                onClick={() => handleUpdateStatus(selectedCandidate.application_id, 'REJECTED')}
-              >
-                <UserX size={20} /> Reject
-              </Button>
+              <Button variant="outline" style={{ flex: 1 }} onClick={() => setShowScheduleModal(false)}>Cancel</Button>
+              <Button style={{ flex: 1 }} onClick={handleScheduleInterview}>Save Schedule</Button>
             </div>
           </Card>
         </div>
@@ -959,6 +1041,7 @@ const StatusBadge = ({ status }) => {
       case 'APPLIED': return { bg: '#f1f5f9', text: '#64748b', label: 'Applied' };
       case 'MCQ_CLEARED': return { bg: '#d1fae5', text: '#065f46', label: 'MCQ Passed' };
       case 'AI_CLEARED': return { bg: '#f0fdf4', text: '#15803d', label: 'AI Interviewed' };
+      case 'INTERVIEW_SCHEDULED': return { bg: '#eff6ff', text: '#1d4ed8', label: 'Final Scheduled' };
       case 'CODING_CLEARED': return { bg: '#ecfdf5', text: '#059669', label: 'Coding Cleared' };
       default: return { bg: '#f1f5f9', text: '#64748b', label: status };
     }

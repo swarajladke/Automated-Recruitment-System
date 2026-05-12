@@ -41,9 +41,23 @@ class Application(db.Model):
     mcq_score = db.Column(db.Integer, default=0)
     ai_score = db.Column(db.Integer, default=0)
     coding_score = db.Column(db.Integer, default=0)
+    questions_solved = db.Column(db.Integer, default=0)
+    test_cases_cleared = db.Column(db.Integer, default=0)
+    interview_time = db.Column(db.String(100)) # Stores scheduled time (e.g., "May 20, 2:00 PM")
     resume_url = db.Column(db.String(200))
     resume_data = db.Column(db.JSON)
     applied_date = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+@app.route('/admin/schedule-interview', methods=['POST'])
+def schedule_interview():
+    data = request.json
+    app_record = Application.query.get(data['application_id'])
+    if not app_record: return jsonify({'message': 'Application not found'}), 404
+    
+    app_record.interview_time = data['interview_time']
+    app_record.status = 'INTERVIEW_SCHEDULED'
+    db.session.commit()
+    return jsonify({'message': 'Interview scheduled successfully', 'new_status': app_record.status})
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -137,6 +151,7 @@ def get_status(id):
                 'ai': app_record.ai_score,
                 'coding': app_record.coding_score
             },
+            'interview_time': app_record.interview_time,
             'resume_insight': app_record.resume_data,
             'resume_url': app_record.resume_url
         })
@@ -166,8 +181,17 @@ def receive_score():
     if not app_record:
         return jsonify({'message': 'Application not found'}), 404
     
-    # Logic: Score < 60 = REJECTED, Score >= 60 = CLEARED
-    if module == 'mcq':
+    # Handle detailed coding scores
+    if 'questions_solved' in data:
+        app_record.questions_solved = data.get('questions_solved', 0)
+        app_record.test_cases_cleared = data.get('test_cases_cleared', 0)
+        # Auto-calculate coding score percentage if total_questions provided
+        total_qs = data.get('total_questions', 2)
+        app_record.coding_score = int((app_record.questions_solved / total_qs) * 100) if total_qs > 0 else 0
+        app_record.status = 'CODING_CLEARED' if app_record.coding_score >= 50 else 'REJECTED'
+    
+    # Legacy module support
+    elif module == 'mcq':
         app_record.mcq_score = score
         app_record.status = 'MCQ_CLEARED' if score >= 60 else 'REJECTED'
     elif module == 'ai':
@@ -178,7 +202,7 @@ def receive_score():
         app_record.status = 'CODING_CLEARED' if score >= 60 else 'REJECTED'
             
     db.session.commit()
-    return jsonify({'message': f'Score for {module} updated', 'new_status': app_record.status})
+    return jsonify({'message': f'Score updated', 'new_status': app_record.status})
 
 import requests
 
@@ -283,6 +307,14 @@ def apply_for_job():
     user = User.query.get(data['candidate_id'])
     if not user: return jsonify({'message': 'Not found'}), 404
     
+    # Check for existing application to prevent duplicates
+    existing_app = Application.query.filter_by(user_id=user.id, applied_role=data['role']).first()
+    if existing_app:
+        return jsonify({
+            'message': 'You have already applied for this position.',
+            'status': 'ALREADY_APPLIED'
+        }), 400
+        
     # Create NEW Application instead of updating User
     new_app = Application(
         user_id=user.id,
@@ -344,8 +376,13 @@ def get_all_candidates():
             'scores': {
                 'mcq': a.mcq_score,
                 'ai': a.ai_score,
-                'coding': a.coding_score
+                'coding': a.coding_score,
+                'coding_details': {
+                    'solved': a.questions_solved,
+                    'test_cases': a.test_cases_cleared
+                }
             },
+            'interview_time': a.interview_time,
             'resume_insight': a.resume_data
         })
     return jsonify(result)
@@ -507,6 +544,32 @@ def init_default_jobs():
             db.session.add(j)
     db.session.commit()
     return jsonify({'message': 'Default jobs initialized'})
+
+@app.route('/sync-code', methods=['POST'])
+def sync_code():
+    data = request.json
+    app_id = data.get('application_id')
+    code = data.get('code')
+    language = data.get('language')
+    
+    if not app_id:
+        return jsonify({"error": "Missing application_id"}), 400
+        
+    live_code_sessions[str(app_id)] = {
+        "code": code or live_code_sessions.get(str(app_id), {}).get("code", ""),
+        "language": language or live_code_sessions.get(str(app_id), {}).get("language", "javascript"),
+        "is_sharing": data.get("is_sharing", live_code_sessions.get(str(app_id), {}).get("is_sharing", False)),
+        "is_cam_off": data.get("is_cam_off", live_code_sessions.get(str(app_id), {}).get("is_cam_off", False)),
+        "last_updated": db.func.current_timestamp().isoformat() if hasattr(db.func, 'current_timestamp') else None
+    }
+    return jsonify({"status": "success"})
+
+@app.route('/get-synced-code/<app_id>', methods=['GET'])
+def get_synced_code(app_id):
+    session = live_code_sessions.get(str(app_id))
+    if not session:
+        return jsonify({"code": "", "language": "javascript", "is_sharing": False})
+    return jsonify(session)
 
 if __name__ == '__main__':
     # Ensure database is clean for presentation if needed, or just keep it

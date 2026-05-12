@@ -147,15 +147,12 @@ const LandingPage = () => {
             <div style={{ position: 'relative' }}>
               <div style={{ position: 'absolute', top: '-1.5rem', left: '0', background: 'var(--primary)', color: 'white', padding: '0.4rem 1rem', borderRadius: '0.5rem', fontSize: '0.75rem', fontWeight: '800', zIndex: 10 }}>LIVE DEMO</div>
               <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '100%', height: '100%', background: '#ecfdf5', borderRadius: '2.5rem', transform: 'rotate(2deg)', zIndex: 0 }}></div>
-              <div style={{ position: 'relative', zIndex: 1, borderRadius: '2.5rem', overflow: 'hidden', boxShadow: '0 40px 80px -20px rgba(0, 0, 0, 0.25)', transition: 'transform 0.3s' }} className="video-hover">
-                <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000', pointerEvents: 'none' }}>
-                  <iframe 
-                    src="https://www.youtube.com/embed/CYZikgtLjbA?autoplay=1&mute=1&controls=0&loop=1&playlist=CYZikgtLjbA&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1"
-                    style={{ position: 'absolute', top: '-5%', left: '-5%', width: '110%', height: '110%', border: 'none' }}
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                  ></iframe>
-                </div>
+              <div style={{ position: 'relative', zIndex: 1, borderRadius: '2.5rem', overflow: 'hidden', boxShadow: '0 40px 80px -20px rgba(0, 0, 0, 0.25)', transition: 'all 0.5s ease' }} className="flow-image-container">
+                <img 
+                  src="/hiring-flow.png" 
+                  alt="HireFlow Hiring Pipeline"
+                  style={{ width: '85%', height: 'auto', display: 'block', margin: '0 auto', animation: 'float 6s ease-in-out infinite' }}
+                />
               </div>
             </div>
           </div>
@@ -245,6 +242,8 @@ const LandingPage = () => {
       </footer>
       <style>{`
         @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+        .flow-image-container:hover { transform: scale(1.02); }
       `}</style>
       {/* Footer */}
       <footer style={{ padding: '6rem 0', background: 'white', borderTop: '1px solid var(--border)' }}>

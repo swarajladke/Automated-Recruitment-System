@@ -143,7 +143,7 @@ const CandidateDashboard = () => {
   const currentStageIndex = isRejected ? -1 :
     selectedApp.status === 'APPLIED' ? 0 :
       selectedApp.status === 'MCQ_CLEARED' ? 1 :
-        selectedApp.status === 'AI_CLEARED' ? 2 :
+        selectedApp.status === 'AI_CLEARED' || selectedApp.status === 'INTERVIEW_SCHEDULED' ? 2 :
           selectedApp.status === 'CODING_CLEARED' ? 3 :
             selectedApp.status === 'SELECTED' ? 4 : 0;
 
@@ -159,7 +159,23 @@ const CandidateDashboard = () => {
     if (type === 'resume') {
       setShowResumeModal(true);
     } else if (type === 'schedule') {
-      setResultModal({ title: 'Interview Schedule', feedback: 'Your interview schedule is currently being synchronized with the HR calendar. Check back in 5 minutes!', icon: <Calendar size={24} />, color: '#3b82f6', isInfo: true });
+      if (selectedApp.interview_time) {
+        setResultModal({ 
+          title: 'Interview Confirmed', 
+          feedback: `Your final interview for the ${selectedApp.applied_role} position is scheduled for: ${selectedApp.interview_time}. Please ensure you are in a quiet environment with a stable internet connection.`, 
+          icon: <Calendar size={24} />, 
+          color: '#10b981', 
+          isInfo: true 
+        });
+      } else {
+        setResultModal({ 
+          title: 'Interview Schedule', 
+          feedback: 'Your technical interview is currently being synchronized with our HR recruitment calendar. You will receive an email confirmation once the slot is finalized by our talent team.', 
+          icon: <Calendar size={24} />, 
+          color: '#3b82f6', 
+          isInfo: true 
+        });
+      }
     }
   };
 
@@ -247,6 +263,15 @@ const CandidateDashboard = () => {
                   status={selectedApp.status}
                 />
 
+                {selectedApp.status === 'INTERVIEW_SCHEDULED' && (
+                  <FinalInterviewBanner 
+                    time={selectedApp.interview_time} 
+                    candidateId={statusData.id}
+                    appId={selectedApp.id}
+                    role={selectedApp.applied_role}
+                  />
+                )}
+
                 <TimelineStepper
                   stages={RECRUITMENT_STAGES}
                   currentStageIndex={currentStageIndex}
@@ -288,8 +313,8 @@ const CandidateDashboard = () => {
                     title="Coding Interview"
                     description="Live technical coding challenge"
                     icon={<Code color="#10b981" />}
-                    status={isRejected ? 'Filtered' : selectedApp.status === 'AI_CLEARED' ? 'Active' : currentStageIndex < 2 ? 'Locked' : 'Completed'}
-                    isActive={selectedApp.status === 'AI_CLEARED' && !isRejected}
+                    status={isRejected ? 'Filtered' : ['AI_CLEARED', 'INTERVIEW_SCHEDULED'].includes(selectedApp.status) ? 'Active' : currentStageIndex < 2 ? 'Locked' : 'Completed'}
+                    isActive={['AI_CLEARED', 'INTERVIEW_SCHEDULED'].includes(selectedApp.status) && !isRejected}
                     isDone={['CODING_CLEARED', 'SELECTED'].includes(selectedApp.status)}
                     onAction={() => {
                       if (['CODING_CLEARED', 'SELECTED'].includes(selectedApp.status)) {
@@ -473,6 +498,7 @@ const CandidateDashboard = () => {
 
 const WelcomeHero = ({ userName, currentStage, isRejected, status }) => {
   const isSelected = status === 'SELECTED';
+  const isScheduled = status === 'INTERVIEW_SCHEDULED';
 
   return (
     <Card style={{
@@ -480,7 +506,9 @@ const WelcomeHero = ({ userName, currentStage, isRejected, status }) => {
         ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
         : isRejected
           ? 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)'
-          : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          : isScheduled
+            ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+            : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
       color: 'white',
       padding: '3rem',
       position: 'relative',
@@ -489,17 +517,19 @@ const WelcomeHero = ({ userName, currentStage, isRejected, status }) => {
     }}>
       <div style={{ position: 'relative', zIndex: 1 }}>
         <h1 style={{ marginBottom: '0.75rem', color: 'white', fontSize: '2.25rem' }}>
-          {isSelected ? 'Congratulations!' : isRejected ? 'Application Status' : `Welcome back, ${userName.split(' ')[0]}!`}
+          {isSelected ? 'Congratulations!' : isRejected ? 'Application Status' : isScheduled ? 'Final Round Ready!' : `Welcome back, ${userName.split(' ')[0]}!`}
         </h1>
         <p style={{ opacity: 0.9, marginBottom: '2rem', maxWidth: '500px', fontSize: '1.1rem', lineHeight: '1.5' }}>
           {isSelected
             ? `Fantastic news, ${userName}! You have successfully cleared all rounds and have been selected for the position. We are thrilled to have you join our team!`
             : isRejected
               ? "Thank you for your interest. Unfortunately, your application didn't meet the criteria for this specific role."
-              : `You are currently in the ${currentStage} stage. Complete the next step to move forward in the hiring process.`
+              : isScheduled
+                ? `Great news, ${userName}! Your final technical interview has been scheduled. Prepare your environment and join using the link below.`
+                : `You are currently in the ${currentStage} stage. Complete the next step to move forward in the hiring process.`
           }
         </p>
-        {!isRejected && !isSelected && <Button variant="primary" style={{ background: 'white', color: 'var(--primary)', border: 'none', padding: '0.75rem 2rem', fontSize: '1rem', fontWeight: '700' }}>Review Status</Button>}
+        {!isRejected && !isSelected && !isScheduled && <Button variant="primary" style={{ background: 'white', color: 'var(--primary)', border: 'none', padding: '0.75rem 2rem', fontSize: '1rem', fontWeight: '700' }}>Review Status</Button>}
       </div>
       {isSelected ? <CheckCircle size={160} style={{ position: 'absolute', right: '-20px', bottom: '-20px', opacity: 0.1, transform: 'rotate(-15deg)' }} /> : isRejected ? <XCircle size={160} style={{ position: 'absolute', right: '-20px', bottom: '-20px', opacity: 0.1, transform: 'rotate(-15deg)' }} /> : <Briefcase size={160} style={{ position: 'absolute', right: '-20px', bottom: '-20px', opacity: 0.1, transform: 'rotate(-15deg)' }} />}
     </Card>
@@ -552,6 +582,36 @@ const ResourceLink = ({ title }) => (
   <a href="#" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none', color: 'var(--text-main)', fontSize: '0.9rem', padding: '0.75rem 0', borderBottom: '1px solid #f1f5f9', transition: 'padding 0.2s' }} onMouseEnter={e => e.currentTarget.style.paddingLeft = '0.5rem'} onMouseLeave={e => e.currentTarget.style.paddingLeft = '0'}>
     {title} <ChevronRight size={14} color="#94a3b8" />
   </a>
+);
+
+const FinalInterviewBanner = ({ time, candidateId, appId, role }) => (
+  <Card style={{ 
+    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', 
+    color: 'white', 
+    padding: '2rem', 
+    marginBottom: '2rem',
+    border: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    animation: 'slideUp 0.5s ease-out'
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+      <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '1rem' }}>
+        <Calendar size={32} />
+      </div>
+      <div>
+        <h3 style={{ color: 'white', marginBottom: '0.25rem' }}>Final Interview Scheduled!</h3>
+        <p style={{ opacity: 0.9, fontSize: '0.9rem' }}>Your technical coding round is set for: <span style={{ fontWeight: '800' }}>{time}</span></p>
+      </div>
+    </div>
+    <Button 
+      onClick={() => window.open(`http://localhost:3001?candidate_id=${candidateId}&application_id=${appId}&role=candidate`, '_blank')}
+      style={{ background: 'white', color: '#1d4ed8', border: 'none', padding: '0.75rem 1.5rem', fontWeight: '800', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+    >
+      Join Interview Room
+    </Button>
+  </Card>
 );
 
 export default CandidateDashboard;

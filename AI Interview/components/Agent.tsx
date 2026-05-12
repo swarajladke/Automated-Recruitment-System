@@ -24,6 +24,7 @@ interface SavedMessage {
 const Agent = ({
   userName,
   userId,
+  profileImage,
   interviewId,
   feedbackId,
   type,
@@ -151,84 +152,102 @@ const Agent = ({
   };
 
   return (
-    <>
-      <div className="w-full flex justify-between items-center mb-6 bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg">
-        <div className="flex items-center gap-2">
-          <div className="size-2 bg-emerald-500 animate-pulse rounded-full" />
-          <span className="text-emerald-500 font-bold text-sm tracking-wide">HIREFLOW AI VERIFIED SESSION</span>
+    <div className="flex flex-col gap-10">
+      {/* Session Header Banner */}
+      <div className="w-full flex justify-between items-center bg-[#064e3b]/20 border border-[#10b981]/20 p-4 rounded-xl backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="size-2.5 bg-[#10b981] animate-pulse rounded-full shadow-[0_0_10px_#10b981]" />
+          <span className="text-[#10b981] font-black text-xs tracking-widest uppercase">HireFlow AI Verified Session</span>
         </div>
-        <span className="text-xs text-muted-foreground uppercase font-semibold">Active Assessment</span>
+        <span className="text-[10px] text-white/40 uppercase font-black tracking-tighter">Active Assessment</span>
       </div>
-      <div className="call-view">
+
+      <div className="call-view grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
         {/* AI Interviewer Card */}
-        <div className="card-interviewer">
-          <div className="avatar">
-            <Image
-              src="/ai-avatar.png"
-              alt="profile-image"
-              width={65}
-              height={54}
-              className="object-cover"
-            />
-            {isSpeaking && <span className="animate-speak" />}
+        <div className="group relative flex flex-col items-center justify-center p-12 h-[450px] bg-gradient-to-br from-[#064e3b]/40 to-[#08090d] rounded-3xl border-2 border-[#10b981]/30 shadow-2xl transition-all duration-500 hover:border-[#10b981]/60">
+          <div className="absolute inset-0 bg-[#10b981]/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" />
+          <div className="relative z-10 flex items-center justify-center bg-gradient-to-tr from-[#10b981] to-white/80 rounded-full size-[140px] shadow-[0_0_50px_rgba(16,185,129,0.2)]">
+             <div className="bg-[#08090d] size-[132px] rounded-full flex items-center justify-center overflow-hidden border-2 border-[#10b981]/20 shadow-inner">
+               <Image
+                 src="/robot.png"
+                 alt="AI Robot Avatar"
+                 width={110}
+                 height={110}
+                 className="object-contain opacity-90 group-hover:scale-110 transition-transform duration-700"
+               />
+             </div>
+            {isSpeaking && <span className="absolute inset-0 animate-ping rounded-full bg-[#10b981]/40" />}
           </div>
-          <h3>AI Interviewer</h3>
+          <h3 className="relative z-10 text-2xl font-bold text-white mt-8 tracking-tight">AI Interviewer</h3>
         </div>
 
         {/* User Profile Card */}
-        <div className="card-border">
-          <div className="card-content">
-            <Image
-              src="/user-avatar.png"
-              alt="profile-image"
-              width={539}
-              height={539}
-              className="rounded-full object-cover size-[120px]"
-            />
-            <h3>{userName}</h3>
+        <div className="group flex flex-col items-center justify-center p-12 h-[450px] bg-[#0f172a]/20 backdrop-blur-sm rounded-3xl border-2 border-white/5 shadow-2xl transition-all duration-500 hover:border-white/10">
+          <div className="relative flex items-center justify-center rounded-full size-[140px] overflow-hidden border-4 border-white/5 shadow-2xl bg-slate-800">
+            {profileImage ? (
+              <Image
+                src={profileImage}
+                alt="Candidate Profile"
+                width={140}
+                height={140}
+                className="object-cover size-full group-hover:scale-110 transition-transform duration-700"
+              />
+            ) : (
+              <div className="flex items-center justify-center size-full bg-gradient-to-br from-slate-700 to-slate-900">
+                <svg className="size-20 text-white/20" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              </div>
+            )}
           </div>
+          <h3 className="text-2xl font-bold text-white mt-8 tracking-tight">
+            {(!userName || userName.toLowerCase().includes('demo')) ? "You" : userName}
+          </h3>
         </div>
       </div>
 
+      {/* Transcript Visualization */}
       {messages.length > 0 && (
-        <div className="transcript-border">
-          <div className="transcript">
+        <div className="w-full bg-[#0f172a]/40 border border-white/5 p-8 rounded-3xl shadow-inner backdrop-blur-xl">
+          <div className="flex flex-col items-center justify-center min-h-12 px-5">
             <p
               key={lastMessage}
               className={cn(
-                "transition-opacity duration-500 opacity-0",
-                "animate-fadeIn opacity-100"
+                "text-xl text-center text-white/90 leading-relaxed font-medium italic",
+                "animate-fadeIn"
               )}
             >
-              {lastMessage}
+              "{lastMessage}"
             </p>
           </div>
         </div>
       )}
 
-      <div className="w-full flex justify-center">
+      {/* Action Controls */}
+      <div className="w-full flex justify-center pt-4">
         {callStatus !== "ACTIVE" ? (
-          <button className="relative btn-call" onClick={() => handleCall()}>
-            <span
-              className={cn(
-                "absolute animate-ping rounded-full opacity-75",
-                callStatus !== "CONNECTING" && "hidden"
-              )}
-            />
-
-            <span className="relative">
-              {callStatus === "INACTIVE" || callStatus === "FINISHED"
-                ? "Call"
-                : ". . ."}
+          <button 
+            className="group relative px-12 py-4 bg-[#10b981] hover:bg-[#059669] text-black font-black uppercase tracking-widest text-sm rounded-full transition-all duration-300 shadow-[0_10px_30px_rgba(16,185,129,0.3)] hover:shadow-[0_15px_40px_rgba(16,185,129,0.5)] active:scale-95" 
+            onClick={() => handleCall()}
+          >
+            <div className={cn(
+              "absolute inset-0 animate-ping rounded-full bg-[#10b981] opacity-20",
+              callStatus !== "CONNECTING" && "hidden"
+            )} />
+            <span className="relative flex items-center gap-2">
+              {callStatus === "INACTIVE" || callStatus === "FINISHED" ? "Initiate Assessment" : "Connecting..."}
             </span>
           </button>
         ) : (
-          <button className="btn-disconnect" onClick={() => handleDisconnect()}>
-            End
+          <button 
+            className="px-12 py-4 bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-widest text-sm rounded-full transition-all duration-300 shadow-[0_10px_30px_rgba(239,68,68,0.3)] hover:shadow-[0_15px_40px_rgba(239,68,68,0.5)] active:scale-95" 
+            onClick={() => handleDisconnect()}
+          >
+            Terminate Session
           </button>
         )}
       </div>
-    </>
+    </div>
   );
 };
 

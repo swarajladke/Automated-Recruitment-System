@@ -10,9 +10,18 @@ import { useState, Suspense } from "react";
 
 function MeetingPage() {
   const { id } = useParams();
+  const isMock = process.env.NEXT_PUBLIC_STREAM_API_KEY === "mock_stream_key" || !process.env.NEXT_PUBLIC_STREAM_API_KEY;
   const { call, isCallLoading } = useGetCallById(id);
 
   const [isSetupComplete, setIsSetupComplete] = useState(false);
+
+  if (isMock) {
+    return (
+      <Suspense fallback={<LoaderUI />}>
+        <MeetingRoom />
+      </Suspense>
+    );
+  }
 
   if (isCallLoading) return <LoaderUI />;
 

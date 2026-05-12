@@ -16,9 +16,17 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
     imageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Demo",
   };
 
+  const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY;
+  const isMock = apiKey === "mock_stream_key" || !apiKey;
+
   useEffect(() => {
+    if (isMock) {
+      console.log("Stream Mock Mode Active - Skipping WS connection");
+      return;
+    }
+
     const client = new StreamVideoClient({
-      apiKey: process.env.NEXT_PUBLIC_STREAM_API_KEY || "mock_key",
+      apiKey: apiKey!,
       user: {
         id: user.id,
         name: `${user.firstName} ${user.lastName}`,
@@ -30,7 +38,8 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
     setStreamVideoClient(client);
   }, []);
 
-  if (!streamVideoClient) return <>{children}</>;
+  if (isMock) return <div className="mock-stream-container">{children}</div>;
+  if (!streamVideoClient) return <LoaderUI />;
 
   return <StreamVideo client={streamVideoClient}>{children}</StreamVideo>;
 };

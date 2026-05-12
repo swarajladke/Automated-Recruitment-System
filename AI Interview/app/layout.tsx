@@ -13,8 +13,8 @@ const monaSans = Mona_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "PrepWise",
-  description: "An AI-powered platform for preparing for mock interviews",
+  title: "HireFlow AI | Interview Arena",
+  description: "Advanced AI-powered assessment platform for high-stakes technical and behavioral interviews.",
 };
 
 export default function RootLayout({

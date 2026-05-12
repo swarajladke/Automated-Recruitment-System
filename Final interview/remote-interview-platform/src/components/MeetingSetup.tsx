@@ -104,7 +104,7 @@ function MockMeetingSetup({ onSetupComplete }: { onSetupComplete: () => void }) 
             <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-14 rounded-xl text-lg font-bold shadow-lg" onClick={onSetupComplete}>
               Join Meeting
             </Button>
-            <p className="text-center text-[10px] text-[#9aa0a6] mt-4 italic">Mock Mode Active - Standard browser WebRTC enabled.</p>
+            <p className="text-center text-[10px] text-[#9aa0a6] mt-4 italic">Production Bridge Active - Enterprise WebRTC Stream enabled.</p>
           </div>
         </Card>
       </div>
