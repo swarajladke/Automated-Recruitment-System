@@ -162,7 +162,7 @@ export default function Home() {
                     muted 
                     playsInline 
                     ref={(el) => { if (el && videoStream) el.srcObject = videoStream; }}
-                    className="w-full h-full object-cover grayscale brightness-[0.7] scale-x-[-1]"
+                    className="w-full h-full object-cover scale-x-[-1]"
                  />
                  <div className="absolute inset-0 pointer-events-none border border-emerald-500/10" />
                  <div className="absolute bottom-6 left-6 flex items-center gap-3 px-3 py-1.5 bg-black/60 backdrop-blur-xl rounded-full border border-white/[0.1]">
