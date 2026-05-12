@@ -21,6 +21,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
 
 db = SQLAlchemy(app)
+import datetime
+
+# Global store for live code synchronization
+live_code_sessions = {}
 
 # Models
 class User(db.Model):
@@ -560,7 +564,7 @@ def sync_code():
         "language": language or live_code_sessions.get(str(app_id), {}).get("language", "javascript"),
         "is_sharing": data.get("is_sharing", live_code_sessions.get(str(app_id), {}).get("is_sharing", False)),
         "is_cam_off": data.get("is_cam_off", live_code_sessions.get(str(app_id), {}).get("is_cam_off", False)),
-        "last_updated": db.func.current_timestamp().isoformat() if hasattr(db.func, 'current_timestamp') else None
+        "last_updated": datetime.datetime.now().isoformat()
     }
     return jsonify({"status": "success"})
 

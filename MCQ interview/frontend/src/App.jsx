@@ -6,6 +6,7 @@ const API_URL = 'http://localhost:5001';
 function App() {
   const [step, setStep] = useState('instructions'); // instructions, test, result, integration_success
   const [candidateId, setCandidateId] = useState(null);
+  const [applicationId, setApplicationId] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -17,11 +18,13 @@ function App() {
   const [role, setRole] = useState('General Assessment');
 
   useEffect(() => {
-    // Capture candidate_id and role from URL
+    // Capture candidate_id, application_id and role from URL
     const params = new URLSearchParams(window.location.search);
     const id = params.get('candidate_id');
+    const appId = params.get('application_id');
     const roleParam = params.get('role');
     setCandidateId(id || 'Guest');
+    setApplicationId(appId);
     setRole(roleParam || 'General Assessment');
     
     fetchQuestions(roleParam);
@@ -112,6 +115,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           candidate_id: candidateId,
+          application_id: applicationId,
           module: 'mcq',
           score: result.percentage
         })

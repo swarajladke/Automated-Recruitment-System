@@ -11,27 +11,36 @@ export default function HireFlowIntegration({ score }: Props) {
   const hasSubmitted = useRef(false);
 
   useEffect(() => {
-    const candidateId = sessionStorage.getItem("candidate_id");
+    // Definitive Identity Bridge: Prioritize URL parameters from the main platform
+    const params = new URLSearchParams(window.location.search);
+    const urlCandidateId = params.get("candidate_id");
+    const urlApplicationId = params.get("application_id");
+    
+    // Fallback to storage if not in URL
+    const storageCandidateId = sessionStorage.getItem("candidate_id");
+    
+    const finalCandidateId = urlCandidateId || storageCandidateId;
 
-    if (candidateId && !hasSubmitted.current) {
-      const numericId = parseInt(candidateId);
+    if (finalCandidateId && !hasSubmitted.current) {
+      const numericId = parseInt(finalCandidateId);
       
       if (!isNaN(numericId)) {
-        submitScore(numericId);
+        submitScore(numericId, urlApplicationId);
         hasSubmitted.current = true;
       } else {
-        console.error("HireFlow AI: Invalid candidate_id found in storage");
+        console.error("HireFlow AI: Invalid candidate_id found");
       }
     }
   }, [score]);
 
-  const submitScore = async (candidateId: number) => {
+  const submitScore = async (candidateId: number, applicationId: string | null) => {
     try {
       const response = await fetch("http://localhost:5001/receive-score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           candidate_id: candidateId,
+          application_id: applicationId,
           module: "ai",
           score: score,
         }),

@@ -55,12 +55,14 @@ function StandardMeetingRoom() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const candidateId = searchParams.get("candidate_id");
+  const applicationId = searchParams.get("application_id");
   const role = searchParams.get("role") || "candidate";
 
   const [isCamOff, setIsCamOff] = useState(false);
   const [isSharingScreen, setIsSharingScreen] = useState(false);
-  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
   const [timeLeft, setTimeLeft] = useState(3600);
   const [isQuestionOpen, setIsQuestionOpen] = useState(false);
   const [executionOutput, setExecutionOutput] = useState<string[]>(["[SYSTEM] Environment ready.", "[SYSTEM] AI Proctor initialized."]);
@@ -97,12 +99,12 @@ function StandardMeetingRoom() {
       if (!isCamOff) {
         try {
           currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-          setVideoStream(currentStream);
+          if (videoRef.current) videoRef.current.srcObject = currentStream;
         } catch (err) {
           console.error("Camera error:", err);
         }
       } else {
-        setVideoStream(null);
+        if (videoRef.current) videoRef.current.srcObject = null;
       }
     }
     startCamera();
@@ -124,6 +126,7 @@ function StandardMeetingRoom() {
     // Calculate final scores
     const finalScore = {
       candidate_id: candidateId || "Guest",
+      application_id: applicationId,
       role: role,
       questions_solved: questionsSolved,
       test_cases_cleared: totalTestCasesCleared,
@@ -275,6 +278,7 @@ function StandardMeetingRoom() {
   };
 
   return (
+    <>
     <div className="h-screen bg-[#0b0e14] text-[#c9d1d9] flex flex-col relative overflow-hidden font-sans">
       
       {/* HEADER BAR */}
@@ -504,13 +508,37 @@ function StandardMeetingRoom() {
         </ResizablePanelGroup>
       </div>
     </div>
+
+    {/* FLOATING CAMERA TERMINAL */}
+    <div className="fixed bottom-10 right-10 z-[100] w-64 h-40 bg-[#161b22]/80 backdrop-blur-xl rounded-2xl border-2 border-white/5 shadow-2xl overflow-hidden group">
+      <div className="absolute top-3 left-3 flex items-center gap-2 z-10">
+        <div className="size-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_#ef4444]" />
+        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Live Proctor</span>
+      </div>
+      <video 
+        ref={videoRef} 
+        autoPlay 
+        playsInline 
+        muted 
+        className="size-full object-cover scale-x-[-1] opacity-60 group-hover:opacity-100 transition-opacity" 
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+    </div>
+    </>
   );
 }
 
 function RealMeetingRoom() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { useCallCallingState } = useCallStateHooks();
   const callingState = useCallCallingState();
+
+  // Initialize state to satisfy CodeEditor props
+  const [currentQuestionIndex] = useState(0);
+  const currentQuestion = CODING_QUESTIONS[currentQuestionIndex];
+  const [language, setLanguage] = useState<"javascript" | "python" | "java">("javascript");
+  const [code, setCode] = useState(currentQuestion.starterCode["javascript"]);
 
   if (callingState !== CallingState.JOINED) {
     return <div className="h-screen bg-[#0d1117] flex items-center justify-center"><LoaderIcon className="animate-spin text-emerald-500" /></div>;
@@ -520,7 +548,12 @@ function RealMeetingRoom() {
     <div className="h-screen bg-[#0d1117] flex flex-col">
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 border-r border-[#30363d]">
-          <CodeEditor />
+          <CodeEditor 
+            code={code}
+            setCode={setCode}
+            language={language}
+            setLanguage={setLanguage}
+          />
         </div>
         <div className="w-[400px] bg-[#161b22]">
           <SpeakerLayout />
