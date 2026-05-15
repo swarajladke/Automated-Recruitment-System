@@ -238,7 +238,7 @@ const JobsPage = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                   <DetailItem icon={<MapPin size={14} />} label="Location" value={selectedJob.location} />
                   <DetailItem icon={<Briefcase size={14} />} label="Type" value={selectedJob.type} />
-                  <DetailItem icon={<DollarSign size={14} />} label="Salary" value={selectedJob.salary} />
+                  <DetailItem icon={<DollarSign size={14} />} label="Salary" value={selectedJob.salary || 'Competitive'} />
                 </div>
                 <div style={{ marginTop: 'auto' }}>
                   <Button style={{ width: '100%', padding: '0.85rem' }} onClick={() => { setShowDetails(false); handleApplyClick(selectedJob); }}>
@@ -452,7 +452,7 @@ const JobCard = ({ job, onApply, onViewDetails, isApplying, isApplied, isAdmin, 
             <Briefcase size={18} color="var(--primary)" /> {job.type}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
-            <DollarSign size={18} color="var(--primary)" /> {job.salary}
+            <DollarSign size={18} color="var(--primary)" /> {job.salary || 'Competitive'}
           </div>
         </div>
       </div>
