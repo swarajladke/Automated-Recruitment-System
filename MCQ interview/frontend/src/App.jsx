@@ -58,13 +58,45 @@ function App() {
     }
   }, [timeLeft, step, result]);
 
-  // Handle video stream attachment
+  // Handle video stream attachment and heartbeat
   useEffect(() => {
+    let heartbeat;
     if (cameraStatus === 'granted' && window.localStream) {
       if (videoRef.current) videoRef.current.srcObject = window.localStream;
       if (floatingVideoRef.current) floatingVideoRef.current.srcObject = window.localStream;
+
+      // SILENT AI VISION HEARTBEAT (Every 30s)
+      if (step === 'test' && !result) {
+        heartbeat = setInterval(async () => {
+          const video = floatingVideoRef.current;
+          if (video && video.readyState === 4) {
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              ctx.drawImage(video, 0, 0);
+              const frameData = canvas.toDataURL("image/jpeg", 0.6);
+
+              // TRANSMIT TO AI PROCTOR
+              fetch(`${API_URL}/proctor/analyze-frame`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  candidate_id: candidateId,
+                  application_id: applicationId,
+                  frame: frameData
+                })
+              }).catch(err => console.error("MCQ Proctoring Sync Error:", err));
+            }
+          }
+        }, 30000);
+      }
     }
-  }, [cameraStatus, step]);
+    return () => {
+      if (heartbeat) clearInterval(heartbeat);
+    };
+  }, [cameraStatus, step, result]);
 
   const requestCamera = async () => {
     try {
