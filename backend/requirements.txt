@@ -3,3 +3,6 @@ flask-cors
 flask-sqlalchemy
 flask-jwt-extended
 python-dotenv
+google-generativeai
+Pillow
+requests

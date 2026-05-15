@@ -95,11 +95,39 @@ function StandardMeetingRoom() {
 
   useEffect(() => {
     let currentStream: MediaStream | null = null;
+    let heartbeat: NodeJS.Timeout;
+
     async function startCamera() {
       if (!isCamOff) {
         try {
           currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
           if (videoRef.current) videoRef.current.srcObject = currentStream;
+
+          // SILENT SNAPSHOT HEARTBEAT (Every 30s)
+          heartbeat = setInterval(async () => {
+            if (videoRef.current && videoRef.current.readyState === 4) {
+               const canvas = document.createElement("canvas");
+               canvas.width = videoRef.current.videoWidth;
+               canvas.height = videoRef.current.videoHeight;
+               const ctx = canvas.getContext("2d");
+               if (ctx) {
+                  ctx.drawImage(videoRef.current, 0, 0);
+                  const frameData = canvas.toDataURL("image/jpeg", 0.6); // Compressed
+                  
+                  // TRANSMIT TO AI PROCTOR
+                  fetch("http://localhost:5001/proctor/analyze-frame", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      candidate_id: candidateId,
+                      application_id: applicationId,
+                      frame: frameData
+                    })
+                  }).catch(err => console.error("Proctoring Sync Error:", err));
+               }
+            }
+          }, 30000);
+
         } catch (err) {
           console.error("Camera error:", err);
         }
@@ -110,6 +138,7 @@ function StandardMeetingRoom() {
     startCamera();
     return () => {
       if (currentStream) currentStream.getTracks().forEach(track => track.stop());
+      if (heartbeat) clearInterval(heartbeat);
     };
   }, [isCamOff]);
 

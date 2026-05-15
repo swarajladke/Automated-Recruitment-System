@@ -7,8 +7,13 @@ import resend
 import requests
 import json
 from dotenv import load_dotenv
+import google.generativeai as genai
+import base64
+from io import BytesIO
+from PIL import Image
 
 load_dotenv()
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 resend.api_key = os.getenv('RESEND_API_KEY')
 BREVO_API_KEY = os.getenv('BREVO_API_KEY', 'xkeysib-mock-key')
 
@@ -574,6 +579,53 @@ def get_synced_code(app_id):
     if not session:
         return jsonify({"code": "", "language": "javascript", "is_sharing": False})
     return jsonify(session)
+
+@app.route('/proctor/analyze-frame', methods=['POST'])
+def analyze_proctor_frame():
+    data = request.json
+    frame_data = data.get('frame')
+    candidate_id = data.get('candidate_id')
+    app_id = data.get('application_id')
+    
+    if not frame_data:
+        return jsonify({"error": "Missing frame data"}), 400
+        
+    try:
+        # 1. Decode Base64 Image
+        header, encoded = frame_data.split(",", 1)
+        image_bytes = base64.b64decode(encoded)
+        image = Image.open(BytesIO(image_bytes))
+        
+        # 2. Query Gemini Vision
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = """
+        Analyze this proctoring snapshot from a technical coding interview. 
+        Detect the following integrity violations:
+        1. Is the candidate using a mobile phone or any other external electronic device?
+        2. Are there any other people visible in the frame?
+        3. Is the candidate looking away from the screen for a suspicious amount of time or at a specific external spot?
+        
+        Return a JSON object: {"violation_detected": boolean, "reason": "string", "confidence": float}.
+        If no violation, return {"violation_detected": false, "reason": "Candidate focused", "confidence": 1.0}.
+        Only return the JSON.
+        """
+        
+        response = model.generate_content([prompt, image])
+        
+        # Clean response text (remove markdown if any)
+        clean_response = response.text.replace('```json', '').replace('```', '').strip()
+        analysis = json.loads(clean_response)
+        
+        # 3. Log violation if detected
+        if analysis.get('violation_detected'):
+            print(f"\n[SECURITY ALERT] Candidate {candidate_id} (App: {app_id}): {analysis['reason']}", flush=True)
+            # Here we could update the DB status or send a real-time alert to Admin
+            
+        return jsonify(analysis)
+        
+    except Exception as e:
+        print(f"Proctoring Error: {str(e)}", flush=True)
+        return jsonify({"error": "Analysis failed", "details": str(e)}), 500
 
 if __name__ == '__main__':
     # Ensure database is clean for presentation if needed, or just keep it
