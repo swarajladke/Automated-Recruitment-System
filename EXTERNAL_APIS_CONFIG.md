@@ -34,6 +34,7 @@ This file contains the definitive list of external service APIs used across the 
 | `BREVO_API_KEY` | `xkeysib-mock-key` (Replace with real key) | Transactional Emails |
 | `BREVO_SENDER_EMAIL` | `hireflow.career@gmail.com` | Official Hiring Notifications |
 | `BREVO_SENDER_NAME` | `HireFlow AI` | Hiring Identity |
+| `GOOGLE_API_KEY` | *[REPLACE WITH YOUR GEMINI KEY]* | AI Proctoring (Vision Heartbeat) |
 
 ---
 
