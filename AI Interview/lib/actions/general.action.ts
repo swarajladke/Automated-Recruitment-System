@@ -10,30 +10,24 @@ export async function createFeedback(params: CreateFeedbackParams) {
   const { interviewId, userId, feedbackId } = params;
 
   try {
-    // MOCK AI ANALYSIS FOR DEMO
-    const mockScore = Math.floor(Math.random() * (95 - 75 + 1)) + 75;
+    // REAL AI ANALYSIS USING GEMINI
+    const transcriptText = transcript.map((m: any) => `${m.role}: ${m.content}`).join("\n");
     
-    const mockFeedback = {
-      interviewId: interviewId,
-      userId: userId,
-      totalScore: mockScore,
-      categoryScores: [
-        { name: "Communication Skills", score: mockScore + 2, comment: "Clear and professional articulation of ideas." },
-        { name: "Technical Knowledge", score: mockScore - 3, comment: "Strong understanding of core concepts and best practices." },
-        { name: "Problem-Solving", score: mockScore, comment: "Methodical approach to complex challenges." },
-        { name: "Cultural & Role Fit", score: mockScore + 1, comment: "Values align well with a high-performance engineering culture." },
-        { name: "Confidence & Clarity", score: mockScore - 1, comment: "Demonstrates high confidence in technical delivery." }
-      ],
-      strengths: [
-        "Excellent grasp of modern frontend architectures.",
-        "Articulate communication of technical trade-offs.",
-        "Strong problem-solving methodology."
-      ],
-      areasForImprovement: [
-        "Could dive deeper into system-level performance optimizations.",
-        "Consider exploring more advanced state management patterns."
-      ],
-      finalAssessment: "The candidate demonstrated exceptional proficiency in both technical and behavioral aspects. Their responses were well-structured, insightful, and showcased a deep understanding of the requirements for this role. Highly recommended for the next stage.",
+    const { object: feedback } = await generateObject({
+      model: google("gemini-1.5-flash"),
+      schema: feedbackSchema,
+      prompt: `Analyze the following interview transcript and provide professional feedback based on the candidate's performance. 
+      
+      Transcript:
+      ${transcriptText}
+      
+      Provide a total score out of 100, specific category scores for Communication, Technical Knowledge, Problem Solving, Cultural Fit, and Confidence. Also list key strengths, areas for improvement, and a final assessment summary.`,
+    });
+
+    const finalFeedback = {
+      interviewId,
+      userId,
+      ...feedback,
       createdAt: new Date().toISOString(),
     };
 
@@ -44,7 +38,7 @@ export async function createFeedback(params: CreateFeedbackParams) {
       feedbackRef = db.collection("feedback").doc();
     }
 
-    await feedbackRef.set(mockFeedback);
+    await feedbackRef.set(finalFeedback);
 
     return { success: true, feedbackId: feedbackRef.id };
   } catch (error) {
