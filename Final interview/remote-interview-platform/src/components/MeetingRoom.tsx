@@ -172,16 +172,44 @@ function StandardMeetingRoom() {
       }
     };
 
+    const handleVisibilityChange = () => {
+      if (document.hidden && isStarted) {
+        setExecutionOutput(prev => [...prev, `[SECURITY] Critical Warning: Tab switching detected.`]);
+        toast.error("Security Alert: Tab switching is recorded.", { icon: '⚠️' });
+      }
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      toast.error("Action Blocked: Right-click is disabled for security.");
+    };
+
+    const handleClipboard = (e: ClipboardEvent) => {
+      e.preventDefault();
+      toast.error("Action Blocked: Copy/Paste is disabled in the Arena.");
+    };
+
+    // ATTACH GLOBAL LISTENERS
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
     document.addEventListener("mozfullscreenchange", handleFullscreenChange);
     document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("contextmenu", handleContextMenu);
+    document.addEventListener("copy", handleClipboard);
+    document.addEventListener("paste", handleClipboard);
+    document.addEventListener("cut", handleClipboard);
 
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
       document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
       document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
       document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("contextmenu", handleContextMenu);
+      document.removeEventListener("copy", handleClipboard);
+      document.removeEventListener("paste", handleClipboard);
+      document.removeEventListener("cut", handleClipboard);
     };
   }, [isStarted]);
 
