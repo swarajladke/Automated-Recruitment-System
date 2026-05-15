@@ -70,7 +70,7 @@ function StandardMeetingRoom() {
   const [isStarted, setIsStarted] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questionsSolved, setQuestionsSolved] = useState(0);
-  const [totalTestCasesCleared, setTotalTestCasesCleared] = useState(0);
+  const [questionScores, setQuestionScores] = useState<Record<string, number>>({});
   const [solvedQuestions, setSolvedQuestions] = useState<Set<string>>(new Set());
 
   const currentQuestion = CODING_QUESTIONS[currentQuestionIndex];
@@ -152,13 +152,17 @@ function StandardMeetingRoom() {
     
     toast.loading(isAuto ? "Security Violation: Auto-Submitting..." : "Submitting Final Assessment...");
     
-    // Calculate final scores
+    // Calculate total test cases available and cleared
+    const totalAvailableTestCases = CODING_QUESTIONS.reduce((acc, q) => acc + (q.testCases?.length || 0), 0);
+    const totalCleared = Object.values(questionScores).reduce((acc, s) => acc + s, 0);
+
     const finalScore = {
       candidate_id: candidateId || "Guest",
       application_id: applicationId,
       role: role,
       questions_solved: questionsSolved,
-      test_cases_cleared: totalTestCasesCleared,
+      test_cases_cleared: totalCleared,
+      total_test_cases: totalAvailableTestCases,
       total_questions: CODING_QUESTIONS.length,
       submission_type: isAuto ? "AUTOMATIC" : "MANUAL",
       status: "Completed"
@@ -285,8 +289,11 @@ function StandardMeetingRoom() {
           }
         });
 
-        const currentTotalPassed = totalTestCasesCleared + passed;
-        setTotalTestCasesCleared(prev => prev + passed);
+        // Update the best score for this question
+        setQuestionScores(prev => ({
+          ...prev,
+          [currentQuestion.id]: Math.max(prev[currentQuestion.id] || 0, passed)
+        }));
         
         setExecutionOutput(prev => [...prev, ...newLogs, `[RESULT] ${passed}/${testCases.length} Test Cases Passed.`]);
         

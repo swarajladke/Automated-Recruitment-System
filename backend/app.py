@@ -194,9 +194,11 @@ def receive_score():
     if 'questions_solved' in data:
         app_record.questions_solved = data.get('questions_solved', 0)
         app_record.test_cases_cleared = data.get('test_cases_cleared', 0)
-        # Auto-calculate coding score percentage if total_questions provided
-        total_qs = data.get('total_questions', 2)
-        app_record.coding_score = int((app_record.questions_solved / total_qs) * 100) if total_qs > 0 else 0
+        
+        # GRANULAR SCORING: Total Test Cases cleared / Total available
+        total_tc = data.get('total_test_cases', 10) # Fallback to 10 if not provided
+        app_record.coding_score = int((app_record.test_cases_cleared / total_tc) * 100) if total_tc > 0 else 0
+        
         app_record.status = 'CODING_CLEARED' if app_record.coding_score >= 50 else 'REJECTED'
     
     # Legacy module support
