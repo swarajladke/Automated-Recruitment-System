@@ -316,11 +316,16 @@ def apply_for_job():
     user = User.query.get(data['candidate_id'])
     if not user: return jsonify({'message': 'Not found'}), 404
     
-    # Check for existing application to prevent duplicates
-    existing_app = Application.query.filter_by(user_id=user.id, applied_role=data['role']).first()
+    # Check for existing application to prevent duplicates (Case-insensitive & Trimmed)
+    role_name = data['role'].strip()
+    existing_app = Application.query.filter(
+        Application.user_id == user.id,
+        db.func.lower(Application.applied_role) == role_name.lower()
+    ).first()
+    
     if existing_app:
         return jsonify({
-            'message': 'You have already applied for this position.',
+            'message': f'You have already applied for {role_name}.',
             'status': 'ALREADY_APPLIED'
         }), 400
         
