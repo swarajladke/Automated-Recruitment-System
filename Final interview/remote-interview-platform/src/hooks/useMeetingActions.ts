@@ -25,6 +25,7 @@ const useMeetingActions = () => {
         return;
       }
 
+      if (!client) throw new Error("Stream Video client is missing");
       const call = client.call("default", id);
       await call.getOrCreate({
         data: {
