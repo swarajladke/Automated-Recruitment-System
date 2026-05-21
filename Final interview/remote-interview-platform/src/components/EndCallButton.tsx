@@ -13,6 +13,8 @@ function EndCallButton() {
 
   const updateInterviewStatus = useMutation(api.interviews.updateInterviewStatus);
 
+  const interview = useQuery(api.interviews.getInterviewByStreamCallId, call?.id ? { streamCallId: call.id } : "skip");
+
   const isMock = process.env.NEXT_PUBLIC_STREAM_API_KEY?.includes("mock") || !process.env.NEXT_PUBLIC_STREAM_API_KEY;
 
   if (!call || (!isMock && !interview)) return null;
