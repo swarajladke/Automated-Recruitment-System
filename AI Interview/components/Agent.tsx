@@ -45,7 +45,7 @@ const Agent = ({
       setCallStatus(CallStatus.FINISHED);
     };
 
-    const onMessage = (message: Message) => {
+    const onMessage = (message: any) => {
       if (message.type === "transcript" && message.transcriptType === "final") {
         const newMessage = { role: message.role, content: message.transcript };
         setMessages((prev) => [...prev, newMessage]);
@@ -88,20 +88,27 @@ const Agent = ({
       setLastMessage(messages[messages.length - 1].content);
     }
 
-    const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+    const handleGenerateFeedback = async (messagesArray: any[]) => {
       console.log("handleGenerateFeedback");
 
-      const { success, feedbackId: id } = await createFeedback({
+      if (messagesArray.length === 0) {
+        console.log("No transcript found!");
+        router.push("/");
+        return;
+      }
+
+      const result = await createFeedback({
         interviewId: interviewId!,
         userId: userId!,
-        transcript: messages,
+        transcript: messagesArray,
         feedbackId,
       });
 
-      if (success && id) {
+      if (result.success && result.feedbackId) {
         router.push(`/interview/${interviewId}/feedback`);
       } else {
-        console.log("Error saving feedback");
+        console.log("Error saving feedback:", result);
+        alert("Failed to score interview. Result payload: " + JSON.stringify(result));
         router.push("/");
       }
     };

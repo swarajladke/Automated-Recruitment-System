@@ -1,0 +1,59 @@
+classDiagram
+    class User {
+        <<Abstract>>
+        +int id
+        +String name
+        +String email
+        +String passwordHash
+        +login() boolean
+        +logout() void
+    }
+    
+    class Candidate {
+        +String resume_url
+        +applyForJob(Job job) Application
+        +takeAssessment(Assessment assessment) void
+    }
+    
+    class Administrator {
+        +String department
+        +createJobPosting(Job job) void
+        +reviewApplication(int applicationId) void
+        +scheduleInterview(int candidateId) void
+    }
+    
+    class Job {
+        +int job_id
+        +String title
+        +String required_skills
+        +float cutoff_score
+        +getDetails() String
+    }
+    
+    class Application {
+        +int application_id
+        +String status
+        +float final_score
+        +updateStatus(String newStatus) void
+        +calculateFinalScore() float
+    }
+    
+    class Assessment {
+        +int assessment_id
+        +float objective_score
+        +evaluateAnswers(String payload) float
+    }
+    
+    class AI_Interview {
+        +int interview_id
+        +String telemetry_data
+        +float behavioral_score
+        +analyzeVideoFeed(Stream video) float
+    }
+
+    User <|-- Candidate
+    User <|-- Administrator
+    Candidate "1" --> "0..*" Application : submits
+    Job "1" --> "0..*" Application : receives
+    Application "1" *-- "1..*" Assessment : includes
+    Application "1" *-- "1..*" AI_Interview : includes

@@ -1,0 +1,27 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '20px', 'primaryColor': '#ffffff', 'primaryBorderColor': '#000000', 'primaryTextColor': '#000000', 'lineColor': '#000000'}}}%%
+flowchart LR
+    classDef default fill:#ffffff,stroke:#000000,stroke-width:2px;
+    
+    Start((Start))
+    Reg([Candidate Registration])
+    NLP{NLP Screening}
+    Ass{Objective Assessment}
+    AI{AI Interview}
+    Score([Score Calculation])
+    Short([Candidate Shortlisted])
+    Rej([Terminal Rejection])
+    End(((End)))
+
+    Start --> Reg
+    Reg --> NLP
+    NLP -->|Pass| Ass
+    Ass -->|Pass| AI
+    AI -->|Pass| Score
+    Score --> Short
+    Short --> End
+    
+    NLP -->|Fail| Rej
+    Ass -->|Fail| Rej
+    AI -->|Fail| Rej
+    
+    Rej --> End

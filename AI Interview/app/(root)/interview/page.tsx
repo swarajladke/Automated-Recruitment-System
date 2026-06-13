@@ -12,7 +12,8 @@ const Page = async () => {
         userName={user?.name!}
         userId={user?.id}
         profileImage={user?.profileURL}
-        type="generate"
+        type="interview"
+        interviewId="mock-id-1"
       />
     </>
   );

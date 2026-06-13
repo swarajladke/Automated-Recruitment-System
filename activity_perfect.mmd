@@ -1,0 +1,30 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '20px', 'primaryColor': '#efefef', 'primaryBorderColor': '#000000', 'primaryTextColor': '#000000', 'lineColor': '#000000'}}}%%
+flowchart TD
+    classDef default fill:#efefef,stroke:#000000,stroke-width:2px;
+    classDef startend fill:#000000,stroke:#000000,stroke-width:2px;
+    
+    Start((( ))):::startend --> Job[Job creation by admin]
+    Job --> Auth[Authenticate Candidate Profile]
+    Auth --> Resume[Resume upload]
+    Resume --> NLP[Execute NLP Resume Analysis]
+    
+    NLP --> RCheck{Resume score<br>>= threshold?}
+    RCheck -->|Yes| Obj[Execute Objective Assessment]
+    RCheck -->|No| Rej[Execute Terminal Rejection]
+    
+    Obj --> ACheck{Assessment score<br>>= cutoff?}
+    ACheck -->|Yes| Behav[Execute Behavioral AI Interview]
+    ACheck -->|No| Rej
+    
+    Behav --> ICheck{Interview score<br>>= cutoff?}
+    ICheck -->|Yes| Calc[Final score calculation]
+    ICheck -->|No| Rej
+    
+    Calc --> FCheck{Overall score<br>>= threshold?}
+    FCheck -->|Yes| Short[Shortlist candidate]
+    FCheck -->|No| Rej
+    
+    Short --> Sched[Interview scheduling]
+    Sched --> RejJoin((( ))):::startend
+    
+    Rej --> RejJoin

@@ -19,8 +19,6 @@ export default function HireFlowAutoRedirect() {
       
       // In a real app, we'd search for the interview ID for this role.
       // For this demo, we'll redirect to a generic interview start if role matches.
-      // But let's just show a "HireFlow Active" banner on the home page instead of force redirecting,
-      // OR redirect to the /interview page which we'll also modify to handle the role.
       
       router.push("/interview");
     }

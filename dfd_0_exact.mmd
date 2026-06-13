@@ -1,0 +1,14 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '16px', 'primaryColor': '#ffffff', 'primaryBorderColor': '#000000', 'primaryTextColor': '#000000', 'lineColor': '#000000'}}}%%
+flowchart LR
+    classDef system fill:#ffffff,stroke:#000000,stroke-width:2px;
+    classDef entity fill:#ffffff,stroke:#000000,stroke-width:2px,shape:rect;
+
+    Candidate["<b>Candidate</b><br><br><span style='font-size: 14px'>(Webcam, Microphone,<br>Resume)</span>"]:::entity
+    
+    System(("<b>AI-Based Interview<br>Monitoring &<br>Evaluation System</b>")):::system
+    
+    Admin["<b>Recruiter / Admin</b><br><br><span style='font-size: 14px'>(Reports, Risk Scores,<br>Final Results)</span>"]:::entity
+
+    Candidate -- "Login Details,<br>Interview<br>Responses,<br>Webcam &<br>Microphone<br>Data" ---> System
+    
+    System -- "Reports,<br>Risk Scores,<br>Final Results" ---> Admin

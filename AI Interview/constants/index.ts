@@ -146,7 +146,6 @@ Thank the candidate for their time.
 Inform them that the company will reach out soon with feedback.
 End the conversation on a polite and positive note.
 
-
 - Be sure to be professional and polite.
 - Keep all your responses short and simple. Use official language, but be kind and welcoming.
 - This is a voice conversation, so keep your responses short, like in a real conversation. Don't ramble for too long.`,
@@ -157,33 +156,13 @@ End the conversation on a polite and positive note.
 
 export const feedbackSchema = z.object({
   totalScore: z.number(),
-  categoryScores: z.tuple([
+  categoryScores: z.array(
     z.object({
-      name: z.literal("Communication Skills"),
+      name: z.string(),
       score: z.number(),
       comment: z.string(),
-    }),
-    z.object({
-      name: z.literal("Technical Knowledge"),
-      score: z.number(),
-      comment: z.string(),
-    }),
-    z.object({
-      name: z.literal("Problem Solving"),
-      score: z.number(),
-      comment: z.string(),
-    }),
-    z.object({
-      name: z.literal("Cultural Fit"),
-      score: z.number(),
-      comment: z.string(),
-    }),
-    z.object({
-      name: z.literal("Confidence and Clarity"),
-      score: z.number(),
-      comment: z.string(),
-    }),
-  ]),
+    })
+  ),
   strengths: z.array(z.string()),
   areasForImprovement: z.array(z.string()),
   finalAssessment: z.string(),

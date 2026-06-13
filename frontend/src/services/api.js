@@ -30,6 +30,10 @@ export const adminService = {
   deleteJob: (id) => api.delete(`/admin/jobs/${id}`),
   initDefaultJobs: () => api.post('/admin/jobs/init-defaults'),
   scheduleInterview: (data) => api.post('/admin/schedule-interview', data),
+  getCodingQuestions: () => api.get('/admin/coding-questions'),
+  addCodingQuestion: (data) => api.post('/admin/coding-questions', data),
+  deleteCodingQuestion: (id) => api.delete(`/admin/coding-questions/${id}`),
+  initDefaultCodingQuestions: () => api.post('/admin/coding-questions/init-defaults'),
 };
 
 export const messageService = {

@@ -1,0 +1,47 @@
+flowchart LR
+    %% Styling to mimic academic Use Case notation
+    classDef actor fill:none,stroke:none,color:#000,font-weight:bold
+    classDef usecase fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000
+    classDef default fill:#ffffff,stroke:#000000,color:#000000
+
+    Cand((Candidate)):::actor
+    HR(("Admin (HR)")):::actor
+
+    subgraph System [Automated Recruitment System]
+        direction TB
+        
+        UC1([Authenticate Candidate]):::usecase
+        UC2([Upload Resume]):::usecase
+        UC3([Apply for Job]):::usecase
+        UC4([Execute Objective Assessment]):::usecase
+        UC5([Execute Behavioral AI Interview]):::usecase
+        UC6([View Application Status]):::usecase
+        
+        UC7([Create Job Posting]):::usecase
+        UC8([Define Job Requirements]):::usecase
+        UC9([View Candidate Applications]):::usecase
+        UC10([Monitor Recruitment Process]):::usecase
+        UC11([View Candidate Scores]):::usecase
+        UC12([Schedule Final Interview]):::usecase
+        
+        Sys1([Execute NLP Resume Analysis]):::usecase
+        Sys2([Automate Candidate Scoring]):::usecase
+    end
+
+    Cand --- UC1
+    Cand --- UC2
+    Cand --- UC3
+    Cand --- UC4
+    Cand --- UC5
+    Cand --- UC6
+
+    HR --- UC7
+    HR --- UC8
+    HR --- UC9
+    HR --- UC10
+    HR --- UC11
+    HR --- UC12
+
+    UC2 -. "<<include>>" .-> Sys1
+    UC4 -. "<<include>>" .-> Sys2
+    UC5 -. "<<include>>" .-> Sys2

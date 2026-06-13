@@ -220,16 +220,22 @@ const JobsPage = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div>
                   <h4 style={{ fontSize: '1rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FileText size={16} color="var(--primary)" /> Role Description</h4>
-                  <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', fontSize: '0.95rem' }}>
-                    We are looking for a highly motivated {selectedJob.title} to join our core team in the {selectedJob.dept} department.
+                  <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', fontSize: '0.95rem', whiteSpace: 'pre-wrap' }}>
+                    {selectedJob.description || `We are looking for a highly motivated ${selectedJob.title} to join our core team in the ${selectedJob.dept} department.`}
                   </p>
                 </div>
                 <div>
                   <h4 style={{ fontSize: '1rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Award size={16} color="var(--primary)" /> Key Requirements</h4>
                   <ul style={{ color: 'var(--text-muted)', paddingLeft: '1.1rem', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.9rem' }}>
-                    <li>3+ years of professional experience in {selectedJob.dept}.</li>
-                    <li>Strong proficiency in modern technical stacks.</li>
-                    <li>Excellent communication and problem-solving skills.</li>
+                    {selectedJob.requirements ? selectedJob.requirements.split('\n').filter(r => r.trim()).map((req, i) => (
+                      <li key={i}>{req}</li>
+                    )) : (
+                      <>
+                        <li>3+ years of professional experience in {selectedJob.dept}.</li>
+                        <li>Strong proficiency in modern technical stacks.</li>
+                        <li>Excellent communication and problem-solving skills.</li>
+                      </>
+                    )}
                   </ul>
                 </div>
               </div>

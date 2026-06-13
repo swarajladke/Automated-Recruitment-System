@@ -1,0 +1,19 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '18px', 'primaryColor': '#ffffff', 'primaryBorderColor': '#000000', 'primaryTextColor': '#000000', 'lineColor': '#000000'}}}%%
+flowchart LR
+    classDef system fill:#efefef,stroke:#000000,stroke-width:4px,shape:circle;
+    classDef entity fill:#ffffff,stroke:#000000,stroke-width:2px,shape:rect;
+
+    Candidate[Candidate]:::entity
+    HR[HR Administrator]:::entity
+    Email[Notification System]:::entity
+
+    System((AI-Based Interview\nMonitoring & Evaluation\nSystem)):::system
+
+    Candidate -- "1. Uploads Resume & Details\n2. Submits Assessment Answers\n3. Streams Video/Audio Feed" ---> System
+    System -- "1. Provides Assessment Interface\n2. Displays Application Status" ---> Candidate
+
+    HR -- "1. Inputs Job Requirements\n2. Configures Test Settings" ---> System
+    System -- "1. Delivers Candidate Match Scores\n2. Provides AI Proctoring Alerts" ---> HR
+
+    System -- "1. Generates Email Triggers\n(Shortlist/Rejection)" ---> Email
+    Email -- "1. Delivers Notifications" ---> Candidate

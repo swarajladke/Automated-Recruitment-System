@@ -13,22 +13,12 @@ interface CodeEditorProps {
   setCode: (code: string) => void;
   language: "javascript" | "python" | "java";
   setLanguage: (lang: "javascript" | "python" | "java") => void;
+  currentQuestion?: any;
 }
 
-function CodeEditor({ code, setCode, language, setLanguage }: CodeEditorProps) {
+function CodeEditor({ code, setCode, language, setLanguage, currentQuestion }: CodeEditorProps) {
   const searchParams = useSearchParams();
   const role = searchParams.get("role");
-
-  // Filter questions based on role or fallback to default
-  const filteredQuestions = role 
-    ? CODING_QUESTIONS.filter(q => !q.role || q.role === role)
-    : CODING_QUESTIONS;
-
-  const initialQuestion = role 
-    ? CODING_QUESTIONS.find(q => q.role === role) || filteredQuestions[0]
-    : filteredQuestions[0];
-
-  const [selectedQuestion, setSelectedQuestion] = useState(initialQuestion);
 
   // LIVE CODE SYNC LOGIC (HR View only)
   useEffect(() => {
@@ -68,17 +58,29 @@ function CodeEditor({ code, setCode, language, setLanguage }: CodeEditorProps) {
 
   const handleLanguageChange = (newLanguage: "javascript" | "python" | "java") => {
     setLanguage(newLanguage);
-    const starterCode = selectedQuestion.starterCode[newLanguage];
-    setCode(starterCode);
-    
-    // CANDIDATE SIDE: Sync language change
-    if (role === 'candidate' || !role) {
-      const candidateId = searchParams.get("candidate_id") || "mock-c";
-      fetch(`http://localhost:5001/sync-code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ application_id: candidateId, code: starterCode, language: newLanguage })
-      }).catch(e => console.error("Language sync error:", e));
+    if (currentQuestion && currentQuestion.starterCode) {
+      const starterCode = currentQuestion.starterCode[newLanguage];
+      setCode(starterCode || "");
+      
+      // CANDIDATE SIDE: Sync language change
+      if (role === 'candidate' || !role) {
+        const candidateId = searchParams.get("candidate_id") || "mock-c";
+        fetch(`http://localhost:5001/sync-code`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ application_id: candidateId, code: starterCode, language: newLanguage })
+        }).catch(e => console.error("Language sync error:", e));
+      }
+    } else {
+      // CANDIDATE SIDE: Sync language change
+      if (role === 'candidate' || !role) {
+        const candidateId = searchParams.get("candidate_id") || "mock-c";
+        fetch(`http://localhost:5001/sync-code`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ application_id: candidateId, code, language: newLanguage })
+        }).catch(e => console.error("Language sync error:", e));
+      }
     }
   };
 

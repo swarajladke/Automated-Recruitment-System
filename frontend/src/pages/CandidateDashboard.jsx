@@ -305,7 +305,7 @@ const CandidateDashboard = () => {
                       if (['AI_CLEARED', 'CODING_CLEARED', 'SELECTED'].includes(selectedApp.status)) {
                         setResultModal({ title: 'AI Behavioral Results', score: selectedApp.scores.ai, feedback: 'Excellent communication skills and cultural fit.', icon: <TrendingUp size={24} />, color: '#8b5cf6' });
                       } else {
-                        window.open(`http://localhost:3000?candidate_id=${statusData.id}&application_id=${selectedApp.id}&role=${encodeURIComponent(selectedApp.applied_role)}`, '_blank');
+                        window.open(`http://localhost:3001?candidate_id=${statusData.id}&application_id=${selectedApp.id}&role=${encodeURIComponent(selectedApp.applied_role)}`, '_blank');
                       }
                     }}
                   />
@@ -320,7 +320,7 @@ const CandidateDashboard = () => {
                       if (['CODING_CLEARED', 'SELECTED'].includes(selectedApp.status)) {
                         setResultModal({ title: 'Technical Interview Results', score: selectedApp.scores.coding, feedback: 'High-quality code production and architectural thinking.', icon: <Code size={24} />, color: '#10b981' });
                       } else {
-                        window.open(`http://localhost:3001?candidate_id=${statusData.id}&application_id=${selectedApp.id}&role=${encodeURIComponent(selectedApp.applied_role)}`, '_blank');
+                        window.open(`http://localhost:3002?candidate_id=${statusData.id}&application_id=${selectedApp.id}&role=${encodeURIComponent(selectedApp.applied_role)}`, '_blank');
                       }
                     }}
                   />

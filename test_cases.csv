@@ -1,0 +1,11 @@
+Test Case ID,Module Tested,Test Description,Expected Result,Actual Result,Status
+TC01,JWT Authentication,Verify secure login utilizing JWT for candidate access.,Generates valid auth token & grants portal access.,Token generated successfully access granted.,Pass
+TC02,WebRTC Video Stream,Request and initialize webcam hardware access via the browser API.,Active video stream feeds directly into the UI.,Stream initialized without latency.,Pass
+TC03,WebRTC Audio Stream,Request and initialize microphone hardware access for speech capture.,Microphone successfully captures audio telemetry.,Audio captured and routed properly.,Pass
+TC04,OpenCV Face Detection,Evaluate the system's ability to track the candidate's facial landmarks in real-time.,Algorithm continuously locks onto the primary face.,Facial bounding box tracked accurately.,Pass
+TC05,Multiple Face Anomaly,Introduce a secondary person into the webcam frame to trigger integrity checks.,System instantly flags a Multiple Persons violation.,Violation triggered and logged to DB.,Pass
+TC06,YOLOv8 Object Detection,Introduce a mobile phone into the camera frame during the interview.,System detects unauthorized hardware and generates flag.,Phone identified integrity flag generated.,Pass
+TC07,NLP Resume Parser,Upload a PDF resume to test the spaCy keyword extraction engine.,System extracts text and calculates affinity score.,Skills extracted and scored accurately.,Pass
+TC08,Speech-to-Text,Process the candidate's live audio feed through the transcription engine.,Audio is accurately transcribed into a text string.,Speech converted to text with high accuracy.,Pass
+TC09,Database Transaction,Commit the final calculated risk score and AI flags to PostgreSQL.,Data is securely persisted with no SQL errors.,Transaction committed data verified in DB.,Pass
+TC10,Score Aggregation,Validate the mathematical logic calculating the final candidate threshold.,Algorithm outputs the correct weighted final score.,Final score calculated accurately.,Pass

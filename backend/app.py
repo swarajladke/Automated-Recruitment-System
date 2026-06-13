@@ -84,6 +84,16 @@ class MCQQuestion(db.Model):
     options = db.Column(db.JSON, nullable=False) # List of strings
     correct_answer = db.Column(db.String(200), nullable=False)
 
+class CodingQuestion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    role = db.Column(db.String(100), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    difficulty = db.Column(db.String(20), default='Medium')  # Easy / Medium / Hard
+    starter_code = db.Column(db.Text, default='')
+    test_cases = db.Column(db.JSON, nullable=False)  # [{input, expected_output}]
+    time_limit_mins = db.Column(db.Integer, default=30)
+
 class Job(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
@@ -91,6 +101,8 @@ class Job(db.Model):
     location = db.Column(db.String(100), default='Remote')
     type = db.Column(db.String(50), default='Full-time')
     salary = db.Column(db.String(100))
+    description = db.Column(db.Text, default='')
+    requirements = db.Column(db.Text, default='')
     posted_date = db.Column(db.DateTime, default=db.func.current_timestamp())
 
 # Create Database
@@ -473,6 +485,116 @@ def delete_mcq(id):
     db.session.commit()
     return jsonify({'message': 'Question deleted'})
 
+# ─── Coding Question Management APIs ─────────────────────────────────────────
+
+@app.route('/admin/coding-questions', methods=['POST'])
+def add_coding_question():
+    data = request.json
+    if not data.get('role') or not data.get('title') or not data.get('description') or not data.get('test_cases'):
+        return jsonify({'message': 'Missing required fields'}), 400
+    new_q = CodingQuestion(
+        role=data['role'],
+        title=data['title'],
+        description=data['description'],
+        difficulty=data.get('difficulty', 'Medium'),
+        starter_code=data.get('starter_code', ''),
+        test_cases=data['test_cases'],
+        time_limit_mins=int(data.get('time_limit_mins', 30))
+    )
+    db.session.add(new_q)
+    db.session.commit()
+    return jsonify({'message': 'Coding question added', 'id': new_q.id}), 201
+
+@app.route('/admin/coding-questions', methods=['GET'])
+def get_all_coding_questions():
+    questions = CodingQuestion.query.all()
+    result = [{
+        'id': q.id, 'role': q.role, 'title': q.title,
+        'description': q.description, 'difficulty': q.difficulty,
+        'starter_code': q.starter_code, 'test_cases': q.test_cases,
+        'time_limit_mins': q.time_limit_mins
+    } for q in questions]
+    return jsonify(result)
+
+@app.route('/admin/coding-questions/<int:id>', methods=['DELETE'])
+def delete_coding_question(id):
+    q = CodingQuestion.query.get(id)
+    if not q:
+        return jsonify({'message': 'Not found'}), 404
+    db.session.delete(q)
+    db.session.commit()
+    return jsonify({'message': 'Question deleted'})
+
+@app.route('/candidate/coding-questions', methods=['GET'])
+def get_candidate_coding_questions():
+    role = request.args.get('role')
+    if role:
+        questions = CodingQuestion.query.filter_by(role=role).all()
+        if not questions:
+            questions = CodingQuestion.query.limit(2).all()
+    else:
+        questions = CodingQuestion.query.limit(2).all()
+    result = [{
+        'id': q.id, 'title': q.title, 'description': q.description,
+        'difficulty': q.difficulty, 'starter_code': q.starter_code,
+        'test_cases': q.test_cases, 'time_limit_mins': q.time_limit_mins
+    } for q in questions]
+    return jsonify(result)
+
+@app.route('/admin/coding-questions/init-defaults', methods=['POST'])
+def init_default_coding_questions():
+    defaults = [
+        {
+            'role': 'Full Stack Engineer',
+            'title': 'Two Sum',
+            'description': 'Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to target.\n\nExample:\nInput: nums = [2, 7, 11, 15], target = 9\nOutput: [0, 1]\nExplanation: nums[0] + nums[1] == 9, return [0, 1].',
+            'difficulty': 'Easy',
+            'starter_code': 'def two_sum(nums, target):\n    # Write your solution here\n    pass',
+            'test_cases': [
+                {'input': '[2,7,11,15], 9', 'expected_output': '[0, 1]'},
+                {'input': '[3,2,4], 6', 'expected_output': '[1, 2]'},
+                {'input': '[3,3], 6', 'expected_output': '[0, 1]'}
+            ],
+            'time_limit_mins': 20
+        },
+        {
+            'role': 'Senior Frontend Developer',
+            'title': 'Flatten Nested Array',
+            'description': 'Write a function that flattens a nested array of any depth into a single-level array.\n\nExample:\nInput: [[1,2,[3]],4,[5,[6,7]]]\nOutput: [1,2,3,4,5,6,7]',
+            'difficulty': 'Medium',
+            'starter_code': 'def flatten(arr):\n    # Write your solution here\n    pass',
+            'test_cases': [
+                {'input': '[[1,2,[3]],4]', 'expected_output': '[1, 2, 3, 4]'},
+                {'input': '[[1,[2,[3,[4]]]]]', 'expected_output': '[1, 2, 3, 4]'},
+                {'input': '[1,2,3]', 'expected_output': '[1, 2, 3]'}
+            ],
+            'time_limit_mins': 25
+        },
+        {
+            'role': 'AI Research Scientist',
+            'title': 'Valid Parentheses',
+            'description': 'Given a string s containing just the characters (, ), {, }, [ and ], determine if the input string is valid.\n\nA string is valid if:\n- Open brackets are closed by the same type.\n- Open brackets are closed in the correct order.\n\nExample:\nInput: s = "()[]{}"\nOutput: True',
+            'difficulty': 'Easy',
+            'starter_code': 'def is_valid(s):\n    # Write your solution here\n    pass',
+            'test_cases': [
+                {'input': '"()"', 'expected_output': 'True'},
+                {'input': '"()[]{}"', 'expected_output': 'True'},
+                {'input': '"(]"', 'expected_output': 'False'}
+            ],
+            'time_limit_mins': 20
+        }
+    ]
+    added = 0
+    for d in defaults:
+        if not CodingQuestion.query.filter_by(title=d['title']).first():
+            q = CodingQuestion(**d)
+            db.session.add(q)
+            added += 1
+    db.session.commit()
+    return jsonify({'message': f'{added} default questions initialized'})
+
+# ─── End Coding Question APIs ─────────────────────────────────────────────────
+
 @app.route('/candidate/mcq', methods=['GET'])
 def get_candidate_mcqs():
     role = request.args.get('role')
@@ -517,7 +639,9 @@ def add_job():
         dept=data['dept'],
         location=data.get('location', 'Remote'),
         type=data.get('type', 'Full-time'),
-        salary=data.get('salary', 'Competitive')
+        salary=data.get('salary', 'Competitive'),
+        description=data.get('description', ''),
+        requirements=data.get('requirements', '')
     )
     db.session.add(new_job)
     db.session.commit()
@@ -535,6 +659,8 @@ def get_jobs():
             'location': j.location,
             'type': j.type,
             'salary': j.salary,
+            'description': j.description,
+            'requirements': j.requirements,
             'posted': 'Recently' # Simplified for demo
         })
     return jsonify(result)

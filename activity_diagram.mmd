@@ -1,0 +1,41 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '24px', 'primaryColor': '#ffffff', 'primaryBorderColor': '#000000', 'primaryTextColor': '#000000', 'lineColor': '#000000'}}}%%
+stateDiagram-v2
+    direction TB
+    [*] --> JobCreation
+    JobCreation: Job Creation by Admin
+    JobCreation --> Auth
+    Auth: Authenticate Candidate Profile
+    Auth --> ResumeUpload
+    ResumeUpload: Resume Upload
+    ResumeUpload --> NLP
+    NLP: Execute NLP Resume Analysis
+    NLP --> ResumeCheck
+    state ResumeCheck <<choice>>
+    ResumeCheck --> ObjectiveAss : [Score >= Threshold]
+    ResumeCheck --> Reject : [Below Threshold]
+    
+    ObjectiveAss: Execute Objective Assessment
+    ObjectiveAss --> AssCheck
+    state AssCheck <<choice>>
+    AssCheck --> Behavioral : [Score >= Cutoff]
+    AssCheck --> Reject : [Below Cutoff]
+    
+    Behavioral: Execute Behavioral AI Interview
+    Behavioral --> IntCheck
+    state IntCheck <<choice>>
+    IntCheck --> CalcScore : [Score >= Cutoff]
+    IntCheck --> Reject : [Below Cutoff]
+    
+    CalcScore: Final Score Calculation
+    CalcScore --> FinalCheck
+    state FinalCheck <<choice>>
+    FinalCheck --> Shortlist : [Score >= Threshold]
+    FinalCheck --> Reject : [Below Threshold]
+    
+    Shortlist: Shortlist Candidate
+    Shortlist --> Sched
+    Sched: Schedule Final Interview
+    Sched --> [*]
+    
+    Reject: Execute Terminal Rejection
+    Reject --> [*]

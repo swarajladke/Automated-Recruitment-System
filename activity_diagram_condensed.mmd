@@ -1,0 +1,25 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '28px', 'primaryColor': '#ffffff', 'primaryBorderColor': '#000000', 'primaryTextColor': '#000000', 'lineColor': '#000000'}}}%%
+stateDiagram-v2
+    direction TB
+    [*] --> Reg
+    Reg: Admin Setup & Candidate Registration
+    Reg --> NLP
+    NLP: NLP Resume Screening (Pass/Fail)
+    NLP --> Ass: [Pass]
+    NLP --> Reject: [Fail]
+    
+    Ass: Automated Objective Assessment (Pass/Fail)
+    Ass --> AI: [Pass]
+    Ass --> Reject: [Fail]
+    
+    AI: Behavioral AI Interview (Pass/Fail)
+    AI --> Score: [Pass]
+    AI --> Reject: [Fail]
+    
+    Score: Mathematical Score Calculation
+    Score --> Shortlist
+    Shortlist: Candidate Shortlisted & Scheduled
+    Shortlist --> [*]
+    
+    Reject: Terminal Rejection
+    Reject --> [*]

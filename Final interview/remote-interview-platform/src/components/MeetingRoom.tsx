@@ -68,12 +68,13 @@ function StandardMeetingRoom() {
   const [executionOutput, setExecutionOutput] = useState<string[]>(["[SYSTEM] Environment ready.", "[SYSTEM] AI Proctor initialized."]);
   const [isRunning, setIsRunning] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
+  const [questions, setQuestions] = useState<any[]>(CODING_QUESTIONS);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questionsSolved, setQuestionsSolved] = useState(0);
   const [questionScores, setQuestionScores] = useState<Record<string, number>>({});
   const [solvedQuestions, setSolvedQuestions] = useState<Set<string>>(new Set());
 
-  const currentQuestion = CODING_QUESTIONS[currentQuestionIndex];
+  const currentQuestion = questions[currentQuestionIndex] || CODING_QUESTIONS[0];
 
   // CODE EXECUTION STATE
   const [language, setLanguage] = useState<"javascript" | "python" | "java">("javascript");
@@ -92,6 +93,46 @@ function StandardMeetingRoom() {
       clearTimeout(starter);
     };
   }, []);
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const role = searchParams.get("role");
+        const url = role ? `http://localhost:5000/candidate/coding-questions?role=${encodeURIComponent(role)}` : `http://localhost:5000/candidate/coding-questions`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            // Map the DB structure to the CodeQuestion structure expected by the frontend
+            const mapped = data.map((q: any) => ({
+              id: String(q.id),
+              title: q.title,
+              difficulty: q.difficulty || "Medium",
+              description: q.description,
+              examples: q.test_cases?.slice(0, 2).map((tc: any) => ({
+                input: tc.input,
+                output: tc.expected_output
+              })) || [],
+              starterCode: {
+                javascript: q.starter_code || "// Write your javascript code here",
+                python: q.starter_code || "# Write your python code here",
+                java: q.starter_code || "// Write your java code here"
+              },
+              testCases: q.test_cases?.map((tc: any) => ({
+                input: tc.input,
+                expected: tc.expected_output
+              })) || [],
+              role: q.role
+            }));
+            setQuestions(mapped);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch custom coding questions", e);
+      }
+    };
+    fetchQuestions();
+  }, [searchParams]);
 
   useEffect(() => {
     let currentStream: MediaStream | null = null;
@@ -153,7 +194,7 @@ function StandardMeetingRoom() {
     toast.loading(isAuto ? "Security Violation: Auto-Submitting..." : "Submitting Final Assessment...");
     
     // Calculate total test cases available and cleared
-    const totalAvailableTestCases = CODING_QUESTIONS.reduce((acc, q) => acc + (q.testCases?.length || 0), 0);
+    const totalAvailableTestCases = questions.reduce((acc, q) => acc + (q.testCases?.length || 0), 0);
     const totalCleared = Object.values(questionScores).reduce((acc, s) => acc + s, 0);
 
     const finalScore = {
@@ -163,7 +204,7 @@ function StandardMeetingRoom() {
       questions_solved: questionsSolved,
       test_cases_cleared: totalCleared,
       total_test_cases: totalAvailableTestCases,
-      total_questions: CODING_QUESTIONS.length,
+      total_questions: questions.length,
       submission_type: isAuto ? "AUTOMATIC" : "MANUAL",
       status: "Completed"
     };
@@ -411,7 +452,7 @@ function StandardMeetingRoom() {
               {/* QUESTION LIST / NAVIGATION */}
               <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <div className="p-6 space-y-3">
-                  {CODING_QUESTIONS.map((q, idx) => {
+                  {questions.map((q, idx) => {
                     const isSolved = solvedQuestions.has(q.id);
                     const isActive = currentQuestionIndex === idx;
 
@@ -534,6 +575,7 @@ function StandardMeetingRoom() {
               setCode={setCode} 
               language={language} 
               setLanguage={setLanguage} 
+              currentQuestion={currentQuestion}
             />
           </ResizablePanel>
           
@@ -584,7 +626,7 @@ function RealMeetingRoom() {
 
   // Initialize state to satisfy CodeEditor props
   const [currentQuestionIndex] = useState(0);
-  const currentQuestion = CODING_QUESTIONS[currentQuestionIndex];
+  const currentQuestion = questions[currentQuestionIndex] || CODING_QUESTIONS[0];
   const [language, setLanguage] = useState<"javascript" | "python" | "java">("javascript");
   const [code, setCode] = useState(currentQuestion.starterCode["javascript"]);
 
@@ -601,6 +643,7 @@ function RealMeetingRoom() {
             setCode={setCode}
             language={language}
             setLanguage={setLanguage}
+            currentQuestion={currentQuestion}
           />
         </div>
         <div className="w-[400px] bg-[#161b22]">

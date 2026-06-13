@@ -1,0 +1,85 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0f1117;
+  --sidebar: #161b22;
+  --panel: #1c2333;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --primary: #58a6ff;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --easy: #3fb950;
+  --medium: #d29922;
+  --hard: #f85149;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+#root { height: 100vh; }
+
+textarea, pre, code {
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+button { cursor: pointer; font-family: inherit; }
+
+.btn-primary {
+  background: var(--primary);
+  color: #0d1117;
+  border: none;
+  padding: 0.6rem 1.4rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.85; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+}
+.btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.badge-easy { background: rgba(63,185,80,0.15); color: var(--easy); }
+.badge-medium { background: rgba(210,153,34,0.15); color: var(--medium); }
+.badge-hard { background: rgba(248,81,73,0.15); color: var(--hard); }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.slide-up { animation: slideUp 0.4s ease; }

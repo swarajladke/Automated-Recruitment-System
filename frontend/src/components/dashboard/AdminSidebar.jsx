@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, PieChart, Settings, LogOut, Search, Shield, MessageSquare, Briefcase } from 'lucide-react';
+import { LayoutDashboard, Users, PieChart, Settings, LogOut, Search, Shield, MessageSquare, Briefcase, Code } from 'lucide-react';
 import { Card } from '../common/UI';
 
 const AdminSidebar = ({ onLogout, activeView, onViewChange }) => {
@@ -39,6 +39,12 @@ const AdminSidebar = ({ onLogout, activeView, onViewChange }) => {
             label="MCQ Manager" 
             active={activeView === 'mcq_manager'}
             onClick={() => onViewChange('mcq_manager')}
+          />
+          <AdminMenuButton 
+            icon={<Code size={18} />} 
+            label="Coding Manager" 
+            active={activeView === 'coding_manager'}
+            onClick={() => onViewChange('coding_manager')}
           />
           <AdminMenuButton 
             icon={<Briefcase size={18} />} 

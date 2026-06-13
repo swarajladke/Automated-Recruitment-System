@@ -33,10 +33,22 @@ const AdminDashboard = () => {
   const [mcqs, setMcqs] = useState([]);
   const [isAddingMcq, setIsAddingMcq] = useState(false);
   const [newMcq, setNewMcq] = useState({
-    role: 'Senior Frontend Developer',
+    role: '',
     question: '',
     options: ['', '', '', ''],
     correct_answer: ''
+  });
+
+  // Coding Manager State
+  const [codingQuestions, setCodingQuestions] = useState([]);
+  const [newCodingQ, setNewCodingQ] = useState({
+    role: '',
+    title: '',
+    description: '',
+    difficulty: 'Medium',
+    starter_code: '',
+    time_limit_mins: 30,
+    test_cases: [{ input: '', expected_output: '' }]
   });
 
   // Job Manager State
@@ -46,7 +58,9 @@ const AdminDashboard = () => {
     dept: 'Engineering',
     location: 'Remote',
     type: 'Full-time',
-    salary: ''
+    salary: '',
+    description: '',
+    requirements: ''
   });
 
   // Settings State
@@ -87,6 +101,7 @@ const AdminDashboard = () => {
     }
     fetchCandidates();
     fetchMcqs();
+    fetchCodingQuestions();
     fetchJobs();
   }, [user, authLoading, navigate]);
 
@@ -99,17 +114,24 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchCodingQuestions = async () => {
+    try {
+      const res = await adminService.getCodingQuestions();
+      setCodingQuestions(res.data);
+    } catch (err) { console.error('Failed to fetch coding questions:', err); }
+  };
+
   const handleAddMcq = async (e) => {
     e.preventDefault();
-    if (!newMcq.question || !newMcq.correct_answer || newMcq.options.some(o => !o)) {
-      alert("Please fill all fields and options.");
+    if (!newMcq.role || !newMcq.question || !newMcq.correct_answer || newMcq.options.some(o => !o)) {
+      alert("Please select a role and fill all fields and options.");
       return;
     }
 
     try {
       await adminService.addMCQ(newMcq);
       setNewMcq({
-        role: 'Senior Frontend Developer',
+        role: '',
         question: '',
         options: ['', '', '', ''],
         correct_answer: ''
@@ -130,6 +152,39 @@ const AdminDashboard = () => {
       console.error(err);
     }
   };
+
+  const handleAddCodingQuestion = async (e) => {
+    e.preventDefault();
+    if (!newCodingQ.role || !newCodingQ.title || !newCodingQ.description) {
+      alert('Please fill in the role, title, and problem description.');
+      return;
+    }
+    const validTestCases = newCodingQ.test_cases.filter(tc => tc.input.trim() && tc.expected_output.trim());
+    if (validTestCases.length === 0) {
+      alert('Please add at least one complete test case.');
+      return;
+    }
+    try {
+      await adminService.addCodingQuestion({ ...newCodingQ, test_cases: validTestCases });
+      setNewCodingQ({ role: '', title: '', description: '', difficulty: 'Medium', starter_code: '', time_limit_mins: 30, test_cases: [{ input: '', expected_output: '' }] });
+      fetchCodingQuestions();
+      alert('Coding question added successfully!');
+    } catch (err) { console.error(err); }
+  };
+
+  const handleDeleteCodingQuestion = async (id) => {
+    if (!window.confirm('Delete this coding question?')) return;
+    try {
+      await adminService.deleteCodingQuestion(id);
+      fetchCodingQuestions();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const addTestCaseRow = () => setNewCodingQ(prev => ({ ...prev, test_cases: [...prev.test_cases, { input: '', expected_output: '' }] }));
+  const removeTestCaseRow = (i) => setNewCodingQ(prev => ({ ...prev, test_cases: prev.test_cases.filter((_, idx) => idx !== i) }));
+  const updateTestCase = (i, field, val) => setNewCodingQ(prev => { const tc = [...prev.test_cases]; tc[i] = { ...tc[i], [field]: val }; return { ...prev, test_cases: tc }; });
 
   const fetchJobs = async () => {
     try {
@@ -154,7 +209,9 @@ const AdminDashboard = () => {
         dept: 'Engineering',
         location: 'Remote',
         type: 'Full-time',
-        salary: ''
+        salary: '',
+        description: '',
+        requirements: ''
       });
       fetchJobs();
       alert("Job posted successfully!");
@@ -492,9 +549,14 @@ const AdminDashboard = () => {
                         onChange={(e) => setNewMcq({...newMcq, role: e.target.value})}
                         style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border)', outline: 'none' }}
                       >
-                        <option>Senior Frontend Developer</option>
-                        <option>AI Research Scientist</option>
-                        <option>Full Stack Engineer</option>
+                        <option value="" disabled>Select Job Role...</option>
+                        {jobs.length === 0 ? (
+                          <option disabled>No active jobs available</option>
+                        ) : (
+                          jobs.map((job) => (
+                            <option key={job.id} value={job.title}>{job.title}</option>
+                          ))
+                        )}
                       </select>
                     </div>
 
@@ -586,6 +648,191 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {activeView === 'coding_manager' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h1 style={{ fontSize: '2.25rem', marginBottom: '0.5rem', fontWeight: '800' }}>Coding Challenge Manager</h1>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Create and manage technical coding problems with custom test cases.</p>
+                </div>
+                <Button onClick={() => adminService.initDefaultCodingQuestions().then(fetchCodingQuestions)} variant="outline">
+                  Load Default Problems
+                </Button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '2rem', alignItems: 'start' }}>
+                {/* Add Coding Question Form */}
+                <Card style={{ padding: '2rem' }}>
+                  <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Briefcase size={20} color="var(--primary)" /> Add New Problem
+                  </h3>
+                  <form onSubmit={handleAddCodingQuestion} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                    {/* Role */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Target Job Role</label>
+                      <select
+                        value={newCodingQ.role}
+                        onChange={e => setNewCodingQ({ ...newCodingQ, role: e.target.value })}
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border)', outline: 'none' }}
+                      >
+                        <option value="" disabled>Select Job Role...</option>
+                        {jobs.length === 0 ? (
+                          <option disabled>No active jobs available</option>
+                        ) : (
+                          jobs.map(job => <option key={job.id} value={job.title}>{job.title}</option>)
+                        )}
+                      </select>
+                    </div>
+
+                    {/* Title */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Problem Title</label>
+                      <input
+                        type="text"
+                        value={newCodingQ.title}
+                        onChange={e => setNewCodingQ({ ...newCodingQ, title: e.target.value })}
+                        placeholder="e.g. Two Sum, Valid Parentheses..."
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border)', outline: 'none' }}
+                      />
+                    </div>
+
+                    {/* Difficulty + Time */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Difficulty</label>
+                        <select
+                          value={newCodingQ.difficulty}
+                          onChange={e => setNewCodingQ({ ...newCodingQ, difficulty: e.target.value })}
+                          style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border)', outline: 'none' }}
+                        >
+                          <option>Easy</option>
+                          <option>Medium</option>
+                          <option>Hard</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Time Limit (mins)</label>
+                        <input
+                          type="number"
+                          min="5" max="120"
+                          value={newCodingQ.time_limit_mins}
+                          onChange={e => setNewCodingQ({ ...newCodingQ, time_limit_mins: parseInt(e.target.value) || 30 })}
+                          style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border)', outline: 'none' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Problem Description</label>
+                      <textarea
+                        value={newCodingQ.description}
+                        onChange={e => setNewCodingQ({ ...newCodingQ, description: e.target.value })}
+                        placeholder="Describe the problem clearly with examples..."
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border)', outline: 'none', minHeight: '110px', resize: 'vertical', fontFamily: 'inherit' }}
+                      />
+                    </div>
+
+                    {/* Starter Code */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Starter Code (optional)</label>
+                      <textarea
+                        value={newCodingQ.starter_code}
+                        onChange={e => setNewCodingQ({ ...newCodingQ, starter_code: e.target.value })}
+                        placeholder="def solution(nums):\n    pass"
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border)', outline: 'none', minHeight: '80px', resize: 'vertical', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f8fafc' }}
+                      />
+                    </div>
+
+                    {/* Test Cases */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-muted)' }}>Test Cases</label>
+                        <button type="button" onClick={addTestCaseRow} style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>+ Add Case</button>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {newCodingQ.test_cases.map((tc, i) => (
+                          <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '0.5rem', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              value={tc.input}
+                              onChange={e => updateTestCase(i, 'input', e.target.value)}
+                              placeholder={`Input ${i + 1}`}
+                              style={{ padding: '0.6rem', borderRadius: '0.5rem', border: '1px solid var(--border)', outline: 'none', fontSize: '0.82rem', fontFamily: 'monospace' }}
+                            />
+                            <input
+                              type="text"
+                              value={tc.expected_output}
+                              onChange={e => updateTestCase(i, 'expected_output', e.target.value)}
+                              placeholder={`Expected Output ${i + 1}`}
+                              style={{ padding: '0.6rem', borderRadius: '0.5rem', border: '1px solid var(--border)', outline: 'none', fontSize: '0.82rem', fontFamily: 'monospace' }}
+                            />
+                            {newCodingQ.test_cases.length > 1 && (
+                              <button type="button" onClick={() => removeTestCaseRow(i)} style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.25rem' }}>
+                                <X size={16} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Button type="submit" style={{ marginTop: '0.5rem' }}>Save Problem to Bank</Button>
+                  </form>
+                </Card>
+
+                {/* Questions List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '800' }}>Active Problem Bank ({codingQuestions.length})</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '780px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                    {codingQuestions.length === 0 ? (
+                      <Card style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        No problems yet. Add one on the left or load defaults.
+                      </Card>
+                    ) : (
+                      codingQuestions.map(q => (
+                        <Card key={q.id} style={{ padding: '1.5rem', position: 'relative' }}>
+                          <button
+                            onClick={() => handleDeleteCodingQuestion(q.id)}
+                            style={{ position: 'absolute', top: '1rem', right: '1rem', border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}
+                          >
+                            <X size={18} />
+                          </button>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--primary)', textTransform: 'uppercase' }}>{q.role}</span>
+                            <span style={{
+                              fontSize: '0.7rem', fontWeight: '700', padding: '0.15rem 0.6rem', borderRadius: '99px',
+                              background: q.difficulty === 'Easy' ? '#d1fae5' : q.difficulty === 'Hard' ? '#fee2e2' : '#fef9c3',
+                              color: q.difficulty === 'Easy' ? '#065f46' : q.difficulty === 'Hard' ? '#991b1b' : '#92400e'
+                            }}>{q.difficulty}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: 'auto', paddingRight: '2rem' }}>⏱ {q.time_limit_mins} mins</span>
+                          </div>
+                          <div style={{ fontWeight: '800', fontSize: '1.05rem', marginBottom: '0.5rem' }}>{q.title}</div>
+                          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{q.description.length > 200 ? q.description.slice(0, 200) + '...' : q.description}</div>
+                          {q.starter_code && (
+                            <pre style={{ background: '#f1f5f9', borderRadius: '0.5rem', padding: '0.75rem', fontSize: '0.78rem', overflowX: 'auto', marginBottom: '1rem' }}>{q.starter_code}</pre>
+                          )}
+                          <div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>TEST CASES ({q.test_cases?.length || 0})</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                              {(q.test_cases || []).map((tc, i) => (
+                                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.78rem', fontFamily: 'monospace' }}>
+                                  <div style={{ background: '#f8fafc', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.4rem 0.6rem' }}>In: {tc.input}</div>
+                                  <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '0.4rem', padding: '0.4rem 0.6rem', color: '#065f46' }}>Out: {tc.expected_output}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeView === 'job_manager' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -661,6 +908,24 @@ const AdminDashboard = () => {
                         onChange={(e) => setNewJob({...newJob, salary: e.target.value})}
                         placeholder="e.g. $120k - $160k"
                         style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border)', outline: 'none' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Role Description</label>
+                      <textarea 
+                        value={newJob.description}
+                        onChange={(e) => setNewJob({...newJob, description: e.target.value})}
+                        placeholder="We are looking for a highly motivated..."
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border)', outline: 'none', resize: 'vertical', minHeight: '80px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Key Requirements (One per line)</label>
+                      <textarea 
+                        value={newJob.requirements}
+                        onChange={(e) => setNewJob({...newJob, requirements: e.target.value})}
+                        placeholder="3+ years of experience...\nStrong proficiency in..."
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid var(--border)', outline: 'none', resize: 'vertical', minHeight: '80px' }}
                       />
                     </div>
                     <Button type="submit" style={{ marginTop: '1rem' }}>Publish Job Opening</Button>
