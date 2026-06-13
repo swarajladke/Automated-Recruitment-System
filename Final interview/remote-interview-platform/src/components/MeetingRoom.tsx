@@ -125,6 +125,8 @@ function StandardMeetingRoom() {
               role: q.role
             }));
             setQuestions(mapped);
+            const totalMins = data.reduce((acc: number, q: any) => acc + (q.time_limit_mins || 30), 0);
+            setTimeLeft(totalMins * 60);
           }
         }
       } catch (e) {
