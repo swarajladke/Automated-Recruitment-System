@@ -289,71 +289,110 @@ function StandardMeetingRoom() {
     };
   }, [isStarted]);
 
-  const handleRunCode = () => {
+  const handleRunCode = async () => {
     setIsRunning(true);
-    setExecutionOutput(prev => [...prev, `[RUN] Initializing Technical Evaluator...`]);
+    setExecutionOutput(prev => [...prev, `[RUN] Initializing Cloud Technical Evaluator...`]);
     
-    setTimeout(() => {
-      if (language !== 'javascript') {
-        setExecutionOutput(prev => [...prev, 
-          `[ERROR] Local execution currently only supported for JavaScript.`,
-          `[INFO] Submitting ${language} implementation to cloud evaluator...`,
-          `[PASS] Cloud Check: Syntax Verified.`
-        ]);
-        setIsRunning(false);
-        return;
-      }
-
-      try {
-        const testCases = currentQuestion.testCases || [];
-        if (testCases.length === 0) throw new Error("No test cases defined for this question.");
-
-        let passed = 0;
-        const newLogs: string[] = [`[RUN] Executing implementation against ${testCases.length} Hard-Tier test cases...`];
-
-        testCases.forEach((tc, i) => {
-          try {
-            // Functional Wrapper for eval
-            const userFn = new Function('nums1', 'nums2', 'height', `${code}\nif(typeof findMedianSortedArrays !== 'undefined') return findMedianSortedArrays(nums1, nums2); if(typeof trap !== 'undefined') return trap(height);`);
-            const result = currentQuestion.id === 'median-arrays' 
-              ? userFn(tc.nums1, tc.nums2) 
-              : userFn(undefined, undefined, tc.height);
-            
-            const isCorrect = Math.abs(result - tc.expected) < 0.0001;
-            
-            if (isCorrect) {
-              passed++;
-              newLogs.push(`[PASS] Test Case ${i + 1}: Success`);
-            } else {
-              newLogs.push(`[FAIL] Test Case ${i + 1}: Expected ${tc.expected}, Got ${result}`);
-            }
-          } catch (err: any) {
-            newLogs.push(`[ERROR] Test Case ${i + 1}: ${err.message}`);
-          }
-        });
-
-        // Update the best score for this question
-        setQuestionScores(prev => ({
-          ...prev,
-          [currentQuestion.id]: Math.max(prev[currentQuestion.id] || 0, passed)
-        }));
-        
-        setExecutionOutput(prev => [...prev, ...newLogs, `[RESULT] ${passed}/${testCases.length} Test Cases Passed.`]);
-        
-        if (passed === testCases.length) {
-          toast.success("Challenge Cleared!");
-          if (!solvedQuestions.has(currentQuestion.id)) {
-            setQuestionsSolved(prev => prev + 1);
-            setSolvedQuestions(prev => new Set(prev).add(currentQuestion.id));
-          }
-        } else {
-          toast.error(`${testCases.length - passed} Test Cases Failed`);
-        }
-      } catch (globalErr: any) {
-        setExecutionOutput(prev => [...prev, `[FATAL] Execution failed: ${globalErr.message}`]);
-      }
+    if (language === 'java') {
+      setExecutionOutput(prev => [...prev, 
+        `[ERROR] Java cloud execution requires strongly-typed test case definitions which are not currently supported by the dynamic evaluator.`,
+        `[INFO] Please switch to Python or JavaScript for full dynamic test suite evaluation.`
+      ]);
       setIsRunning(false);
-    }, 800);
+      return;
+    }
+
+    try {
+      const testCases = currentQuestion.testCases || [];
+      if (testCases.length === 0) throw new Error("No test cases defined for this question.");
+
+      let fnName = "solution";
+      if (language === 'javascript') {
+        const match = code.match(/function\s+([a-zA-Z0-9_]+)/) || code.match(/const\s+([a-zA-Z0-9_]+)\s*=\s*(?:function|\()/);
+        if (match) fnName = match[1];
+      } else if (language === 'python') {
+        const match = code.match(/def\s+([a-zA-Z0-9_]+)/);
+        if (match) fnName = match[1];
+      }
+
+      let passed = 0;
+      const newLogs: string[] = [`[RUN] Extracting function '${fnName}'...`, `[RUN] Executing implementation against ${testCases.length} Cloud test cases...`];
+      setExecutionOutput(prev => [...prev, ...newLogs]);
+
+      for (let i = 0; i < testCases.length; i++) {
+        const tc = testCases[i];
+        try {
+          let runnerCode = "";
+          if (language === 'javascript') {
+            runnerCode = `
+${code}
+try { const args = [${tc.input}]; const result = ${fnName}(...args); console.log(JSON.stringify(result)); } catch(e) { console.error(e.message); }`;
+          } else if (language === 'python') {
+            runnerCode = `
+${code}
+import json
+try:
+    args = (${tc.input})
+    if type(args) is not tuple: args = (args,)
+    print(json.dumps(${fnName}(*args)))
+except Exception as e:
+    print(str(e))`;
+          }
+
+          const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              language: language === 'javascript' ? 'javascript' : 'python',
+              version: language === 'javascript' ? '18.15.0' : '3.10.0',
+              files: [{ content: runnerCode }]
+            })
+          });
+
+          const data = await response.json();
+          if (data.run.stderr) {
+            setExecutionOutput(prev => [...prev, `[ERROR] Test Case ${i + 1}: ${data.run.stderr.trim()}`]);
+            continue;
+          }
+
+          const outputStr = data.run.stdout.trim();
+          const normalize = (s: string) => s.replace(/\s+/g, '');
+          const isCorrect = normalize(outputStr) === normalize(tc.expected) || outputStr === tc.expected;
+
+          if (isCorrect) {
+            passed++;
+            setExecutionOutput(prev => [...prev, `[PASS] Test Case ${i + 1}: Success`]);
+          } else {
+            setExecutionOutput(prev => [...prev, `[FAIL] Test Case ${i + 1}: Expected ${tc.expected}, Got ${outputStr}`]);
+          }
+        } catch (err: any) {
+          setExecutionOutput(prev => [...prev, `[ERROR] Test Case ${i + 1}: API Error - ${err.message}`]);
+        }
+        
+        // Delay 500ms to avoid Piston API rate limiting
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      setQuestionScores(prev => ({
+        ...prev,
+        [currentQuestion.id]: Math.max(prev[currentQuestion.id] || 0, passed)
+      }));
+      
+      setExecutionOutput(prev => [...prev, `[RESULT] ${passed}/${testCases.length} Test Cases Passed.`]);
+      
+      if (passed === testCases.length) {
+        toast.success("Challenge Cleared!");
+        if (!solvedQuestions.has(currentQuestion.id)) {
+          setQuestionsSolved(prev => prev + 1);
+          setSolvedQuestions(prev => new Set(prev).add(currentQuestion.id));
+        }
+      } else {
+        toast.error(`${testCases.length - passed} Test Cases Failed`);
+      }
+    } catch (globalErr: any) {
+      setExecutionOutput(prev => [...prev, `[FATAL] Execution failed: ${globalErr.message}`]);
+    }
+    setIsRunning(false);
   };
 
   const formatTime = (seconds: number) => {
