@@ -48,6 +48,8 @@ function App() {
   const [agreed, setAgreed] = useState(false);
   const videoRef = useRef(null);
   const floatingVideoRef = useRef(null);
+  const violationCountRef = useRef(0);
+  const [toastMessage, setToastMessage] = useState(null);
 
   useEffect(() => {
     if (step === 'test' && !result && timeLeft > 0) {
@@ -65,7 +67,7 @@ function App() {
       if (videoRef.current) videoRef.current.srcObject = window.localStream;
       if (floatingVideoRef.current) floatingVideoRef.current.srcObject = window.localStream;
 
-      // SILENT AI VISION HEARTBEAT (Every 30s)
+      // SILENT AI VISION HEARTBEAT (Every 5s for OpenCV)
       if (step === 'test' && !result) {
         heartbeat = setInterval(async () => {
           const video = floatingVideoRef.current;
@@ -87,16 +89,43 @@ function App() {
                   application_id: applicationId,
                   frame: frameData
                 })
-              }).catch(err => console.error("MCQ Proctoring Sync Error:", err));
+              })
+              .then(res => res.json())
+              .then(data => {
+                if (data.violation_detected) {
+                  violationCountRef.current += 1;
+                  const strikesLeft = 3 - violationCountRef.current;
+                  
+                  if (strikesLeft > 0) {
+                    setToastMessage(`Proctoring Alert: ${data.reason}. Warnings remaining: ${strikesLeft}`);
+                    setTimeout(() => setToastMessage(null), 5000);
+                  } else {
+                    setToastMessage(`Final Proctoring Violation: Auto-submitting exam.`);
+                    handleSubmit(true, data.reason);
+                  }
+                }
+              })
+              .catch(err => console.error("MCQ Proctoring Sync Error:", err));
             }
           }
-        }, 30000);
+        }, 5000);
       }
     }
     return () => {
       if (heartbeat) clearInterval(heartbeat);
     };
-  }, [cameraStatus, step, result]);
+  }, [cameraStatus, step, result, questions, answers]);
+
+  // Fullscreen Enforcer
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && step === 'test' && !result) {
+         handleSubmit(true, "Mandatory Fullscreen Exited.");
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, [step, result, questions, answers]);
 
   const requestCamera = async () => {
     try {
@@ -119,8 +148,24 @@ function App() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (isAuto = false, customReason = null) => {
     if (!questions || questions.length === 0) return;
+    
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(err => console.error(err));
+    }
+
+    if (isAuto) {
+      setResult({
+        total: questions.length,
+        correct: 0,
+        percentage: 0,
+        status: 'FAIL',
+        reason: customReason
+      });
+      setStep('result');
+      return;
+    }
     
     let correctCount = 0;
     questions.forEach(q => {
@@ -224,7 +269,14 @@ function App() {
             <button 
               className="btn-primary" 
               disabled={!agreed || cameraStatus !== 'granted'}
-              onClick={() => setStep('test')}
+              onClick={async () => {
+                try {
+                  await document.documentElement.requestFullscreen();
+                } catch (e) {
+                  console.error("Fullscreen error:", e);
+                }
+                setStep('test');
+              }}
             >
               Enter Test Environment
             </button>
@@ -243,9 +295,14 @@ function App() {
           <span className="score-big">{result.percentage}%</span>
           <span style={{fontSize: '0.8rem', color: '#64748b', fontWeight: 600}}>Overall Score</span>
         </div>
-        <p style={{color: '#64748b', fontSize: '1.1rem', marginBottom: '2rem'}}>
+        <p style={{color: '#64748b', fontSize: '1.1rem', marginBottom: '1rem'}}>
           {result.status === 'PASS' ? 'Great job! You have cleared the requirements.' : 'Thank you for participating. You did not meet the pass criteria.'}
         </p>
+        {result.reason && (
+          <div style={{ background: '#fee2e2', color: '#991b1b', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '2rem', fontWeight: 600 }}>
+            Security Violation Logged: {result.reason}
+          </div>
+        )}
         <button 
           className="btn-submit" 
           style={{padding: '1rem 3rem', minWidth: '250px'}} 
@@ -297,6 +354,15 @@ function App() {
 
   return (
     <div className="app-wrapper">
+      {toastMessage && (
+        <div style={{
+          position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+          background: '#ef4444', color: 'white', padding: '1rem 2rem', borderRadius: '8px',
+          fontWeight: 'bold', zIndex: 9999, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+        }}>
+          {toastMessage}
+        </div>
+      )}
       <header className="navbar">
         <div className="brand">RECRUIT.AI</div>
         <div className="nav-right">
