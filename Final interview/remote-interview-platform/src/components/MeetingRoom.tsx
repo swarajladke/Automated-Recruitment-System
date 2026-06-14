@@ -344,12 +344,16 @@ except Exception as e:
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               language: language === 'javascript' ? 'javascript' : 'python',
-              version: language === 'javascript' ? '18.15.0' : '3.10.0',
+              version: "*",
               files: [{ content: runnerCode }]
             })
           });
 
           const data = await response.json();
+          if (!data.run) {
+            setExecutionOutput(prev => [...prev, `[ERROR] Test Case ${i + 1}: Piston API Error - ${data.message || JSON.stringify(data)}`]);
+            continue;
+          }
           if (data.run.stderr) {
             setExecutionOutput(prev => [...prev, `[ERROR] Test Case ${i + 1}: ${data.run.stderr.trim()}`]);
             continue;
