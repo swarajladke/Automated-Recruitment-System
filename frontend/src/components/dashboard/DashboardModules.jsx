@@ -47,6 +47,7 @@ export const StatusBanner = ({ status, resumeInsight }) => {
       case 'APPLIED': return "Next Step: Complete the MCQ assessment to unlock the AI interview stage.";
       case 'MCQ_CLEARED': return "Great job! You've cleared the MCQ. Please schedule your AI Interview.";
       case 'AI_CLEARED': return "The coding interview stage is being coordinated. Stand by for details.";
+      case 'CODING_CLEARED': return "Pending HR Review - Waiting for final selection decision.";
       case 'SELECTED': return "Congratulations! You've received an offer. Check your email.";
       case 'REJECTED': return "Thank you for your time. We've decided to move forward with other candidates.";
       default: return "";
