@@ -144,24 +144,23 @@ const CandidateDashboard = () => {
   let currentStageIndex = 0;
   if (isRejected && selectedApp.scores) {
     if (selectedApp.scores.coding >= 60) currentStageIndex = 4;
-    else if (selectedApp.scores.coding > 0 || selectedApp.scores.ai >= 60) currentStageIndex = 3;
-    else if (selectedApp.scores.ai > 0 || selectedApp.scores.mcq >= 60) currentStageIndex = 2;
-    else if (selectedApp.scores.mcq > 0) currentStageIndex = 1;
-    else currentStageIndex = 0;
+    else if (selectedApp.scores.ai >= 60) currentStageIndex = 3;
+    else if (selectedApp.scores.mcq >= 60) currentStageIndex = 2;
+    else currentStageIndex = 1;
   } else {
     currentStageIndex = 
-      selectedApp.status === 'APPLIED' ? 0 :
-        selectedApp.status === 'MCQ_CLEARED' ? 1 :
-          selectedApp.status === 'AI_CLEARED' || selectedApp.status === 'INTERVIEW_SCHEDULED' ? 2 :
-            selectedApp.status === 'CODING_CLEARED' ? 3 :
-              selectedApp.status === 'SELECTED' ? 4 : 0;
+      selectedApp.status === 'APPLIED' ? 1 :
+        selectedApp.status === 'MCQ_CLEARED' ? 2 :
+          selectedApp.status === 'AI_CLEARED' || selectedApp.status === 'INTERVIEW_SCHEDULED' ? 3 :
+            selectedApp.status === 'CODING_CLEARED' ? 4 :
+              selectedApp.status === 'SELECTED' ? 5 : 1;
   }
 
   const calculateCompletion = () => {
     if (isRejected) return 10;
     if (selectedApp.status === 'SELECTED') return 100;
     const base = 20;
-    const progress = currentStageIndex * 20;
+    const progress = (currentStageIndex - 1) * 20;
     return base + progress;
   };
 
@@ -308,7 +307,7 @@ const CandidateDashboard = () => {
                     title="AI Behavioral Interview"
                     description="Voice-based AI evaluation of soft skills"
                     icon={<TrendingUp color="#8b5cf6" />}
-                    status={isRejected ? 'Filtered' : selectedApp.status === 'MCQ_CLEARED' ? 'Active' : currentStageIndex < 1 ? 'Locked' : 'Completed'}
+                    status={isRejected ? 'Filtered' : selectedApp.status === 'MCQ_CLEARED' ? 'Active' : currentStageIndex < 2 ? 'Locked' : 'Completed'}
                     isActive={selectedApp.status === 'MCQ_CLEARED' && !isRejected}
                     isDone={['AI_CLEARED', 'CODING_CLEARED', 'SELECTED'].includes(selectedApp.status)}
                     onAction={() => {
@@ -323,7 +322,7 @@ const CandidateDashboard = () => {
                     title="Coding Interview"
                     description="Live technical coding challenge"
                     icon={<Code color="#10b981" />}
-                    status={isRejected ? 'Filtered' : ['AI_CLEARED', 'INTERVIEW_SCHEDULED'].includes(selectedApp.status) ? 'Active' : currentStageIndex < 2 ? 'Locked' : 'Completed'}
+                    status={isRejected ? 'Filtered' : ['AI_CLEARED', 'INTERVIEW_SCHEDULED'].includes(selectedApp.status) ? 'Active' : currentStageIndex < 3 ? 'Locked' : 'Completed'}
                     isActive={['AI_CLEARED', 'INTERVIEW_SCHEDULED'].includes(selectedApp.status) && !isRejected}
                     isDone={['CODING_CLEARED', 'SELECTED'].includes(selectedApp.status)}
                     onAction={() => {
