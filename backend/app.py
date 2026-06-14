@@ -196,6 +196,8 @@ def receive_score():
     candidate_id = data.get('candidate_id')
     module = data.get('module') # 'mcq', 'ai', 'coding'
     score = data.get('score')
+    if score is None:
+        score = 0
     
     # Try to find specific application, fallback to latest for compatibility
     if app_id:

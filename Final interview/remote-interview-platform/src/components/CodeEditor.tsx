@@ -28,6 +28,7 @@ function CodeEditor({ code, setCode, language, setLanguage, currentQuestion }: C
       const pullInterval = setInterval(async () => {
         try {
           const res = await fetch(`http://localhost:5001/get-synced-code/${candidateId}`);
+          if (!res.ok) return;
           const data = await res.json();
           if (data.code !== undefined && data.code !== code) {
             setCode(data.code);

@@ -34,18 +34,27 @@ const CandidateDashboard = () => {
     // Identity Bridge: Verify email matches before syncing
     const pendingApp = sessionStorage.getItem('pending_application');
     if (pendingApp) {
-      const appData = JSON.parse(pendingApp);
-      if (appData.email === user.email) {
-        candidateService.apply({
-          candidate_id: user.id,
-          ...appData
-        }).then(() => {
-          sessionStorage.removeItem('pending_application');
-          sessionStorage.setItem('just_synced', 'true');
+      try {
+        const appData = JSON.parse(pendingApp);
+        if (appData.email === user.email) {
+          candidateService.apply({
+            candidate_id: user.id,
+            ...appData
+          }).then(() => {
+            sessionStorage.removeItem('pending_application');
+            sessionStorage.setItem('just_synced', 'true');
+            fetchStatus(user.id);
+          }).catch(err => {
+            console.error("Failed to sync pending application", err);
+            fetchStatus(user.id);
+          });
+        } else {
+          // Mismatch - don't sync
           fetchStatus(user.id);
-        });
-      } else {
-        // Mismatch - don't sync
+        }
+      } catch (err) {
+        console.error("Error parsing pending_application from session storage", err);
+        sessionStorage.removeItem('pending_application');
         fetchStatus(user.id);
       }
     } else {

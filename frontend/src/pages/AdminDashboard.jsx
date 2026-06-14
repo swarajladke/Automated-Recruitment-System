@@ -530,7 +530,7 @@ const AdminDashboard = () => {
                   <h1 style={{ fontSize: '2.25rem', marginBottom: '0.5rem', fontWeight: '800' }}>MCQ Assessment Manager</h1>
                   <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Create and manage custom qualification exams for each role.</p>
                 </div>
-                <Button onClick={() => adminService.initDefaultMCQs().then(fetchMcqs)} variant="outline">
+                <Button onClick={() => adminService.initDefaultMCQs().then(fetchMcqs).catch(console.error)} variant="outline">
                   Load Default Questions
                 </Button>
               </div>
@@ -655,7 +655,7 @@ const AdminDashboard = () => {
                   <h1 style={{ fontSize: '2.25rem', marginBottom: '0.5rem', fontWeight: '800' }}>Coding Challenge Manager</h1>
                   <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Create and manage technical coding problems with custom test cases.</p>
                 </div>
-                <Button onClick={() => adminService.initDefaultCodingQuestions().then(fetchCodingQuestions)} variant="outline">
+                <Button onClick={() => adminService.initDefaultCodingQuestions().then(fetchCodingQuestions).catch(console.error)} variant="outline">
                   Load Default Problems
                 </Button>
               </div>
@@ -840,7 +840,7 @@ const AdminDashboard = () => {
                   <h1 style={{ fontSize: '2.25rem', marginBottom: '0.5rem', fontWeight: '800' }}>Job Posting Manager</h1>
                   <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Manage your active vacancies and attract top talent.</p>
                 </div>
-                <Button onClick={() => adminService.initDefaultJobs().then(fetchJobs)} variant="outline">
+                <Button onClick={() => adminService.initDefaultJobs().then(fetchJobs).catch(console.error)} variant="outline">
                   Load Sample Jobs
                 </Button>
               </div>
