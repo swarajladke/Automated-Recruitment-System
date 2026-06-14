@@ -143,8 +143,9 @@ const CandidateDashboard = () => {
   
   let currentStageIndex = 0;
   if (isRejected && selectedApp.scores) {
-    if (selectedApp.scores.coding > 0) currentStageIndex = 3;
-    else if (selectedApp.scores.ai > 0) currentStageIndex = 2;
+    if (selectedApp.scores.coding >= 60) currentStageIndex = 4;
+    else if (selectedApp.scores.coding > 0 || selectedApp.scores.ai >= 60) currentStageIndex = 3;
+    else if (selectedApp.scores.ai > 0 || selectedApp.scores.mcq >= 60) currentStageIndex = 2;
     else if (selectedApp.scores.mcq > 0) currentStageIndex = 1;
     else currentStageIndex = 0;
   } else {
@@ -552,8 +553,9 @@ const ApplicationLevelCard = ({ currentStageIndex, stages, isRejected, status, s
 
   let rejectionStageText = 'ATS Screening';
   if (isRejected && scores) {
-    if (scores.coding > 0) rejectionStageText = 'Coding Interview';
-    else if (scores.ai > 0) rejectionStageText = 'AI Interview';
+    if (scores.coding >= 60) rejectionStageText = 'Final Selection';
+    else if (scores.coding > 0 || scores.ai >= 60) rejectionStageText = 'Coding Interview';
+    else if (scores.ai > 0 || scores.mcq >= 60) rejectionStageText = 'AI Interview';
     else if (scores.mcq > 0) rejectionStageText = 'MCQ Assessment';
   }
 
