@@ -1125,12 +1125,12 @@ const AdminDashboard = () => {
               {selectedCandidate.scores.coding_details && (
                 <div style={{ borderTop: '1px dashed var(--border)', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between' }}>
                   <div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>Questions Solved</div>
-                    <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)' }}>{selectedCandidate.scores.coding_details.solved} / 2</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>Test Cases Passed</div>
                     <div style={{ fontSize: '1rem', fontWeight: '800', color: '#10b981' }}>{selectedCandidate.scores.coding_details.test_cases} Total</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>Questions Solved</div>
+                    <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)' }}>{selectedCandidate.scores.coding_details.solved} / 2</div>
                   </div>
                 </div>
               )}
