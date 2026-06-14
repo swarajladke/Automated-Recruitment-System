@@ -289,13 +289,24 @@ function StandardMeetingRoom() {
     };
   }, [isStarted]);
 
+  const loadPyodideEngine = async () => {
+    if ((window as any).pyodide) return (window as any).pyodide;
+    setExecutionOutput(prev => [...prev, `[SYSTEM] Downloading Pyodide WebAssembly package... (This may take a few seconds)`]);
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js";
+    document.body.appendChild(script);
+    await new Promise(r => script.onload = r);
+    (window as any).pyodide = await (window as any).loadPyodide();
+    return (window as any).pyodide;
+  };
+
   const handleRunCode = async () => {
     setIsRunning(true);
-    setExecutionOutput(prev => [...prev, `[RUN] Initializing Cloud Technical Evaluator...`]);
+    setExecutionOutput(prev => [...prev, `[RUN] Initializing Browser Technical Evaluator...`]);
     
     if (language === 'java') {
       setExecutionOutput(prev => [...prev, 
-        `[ERROR] Java cloud execution requires strongly-typed test case definitions which are not currently supported by the dynamic evaluator.`,
+        `[ERROR] Java execution is not currently supported natively in the browser.`,
         `[INFO] Please switch to Python or JavaScript for full dynamic test suite evaluation.`
       ]);
       setIsRunning(false);
@@ -316,50 +327,62 @@ function StandardMeetingRoom() {
       }
 
       let passed = 0;
-      const newLogs: string[] = [`[RUN] Extracting function '${fnName}'...`, `[RUN] Executing implementation against ${testCases.length} Cloud test cases...`];
+      const newLogs: string[] = [`[RUN] Extracting function '${fnName}'...`, `[RUN] Executing implementation against ${testCases.length} browser test cases...`];
       setExecutionOutput(prev => [...prev, ...newLogs]);
+
+      let pyodide: any = null;
+      if (language === 'python') {
+        pyodide = await loadPyodideEngine();
+        setExecutionOutput(prev => [...prev, `[SYSTEM] Pyodide Ready. Executing...`]);
+      }
 
       for (let i = 0; i < testCases.length; i++) {
         const tc = testCases[i];
         try {
-          let runnerCode = "";
+          let outputStr = "";
+          
           if (language === 'javascript') {
-            runnerCode = `
-${code}
-try { const args = [${tc.input}]; const result = ${fnName}(...args); console.log(JSON.stringify(result)); } catch(e) { console.error(e.message); }`;
+            const originalLog = console.log;
+            try {
+              console.log = (...args) => {
+                outputStr += args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(" ") + "\n";
+              };
+              const result = eval(`(() => { ${code}; return ${fnName}(...[${tc.input}]); })()`);
+              if (result !== undefined) {
+                 outputStr = JSON.stringify(result);
+              }
+            } finally {
+              console.log = originalLog;
+            }
           } else if (language === 'python') {
-            runnerCode = `
-${code}
+            const runnerCode = `
+import sys
+import io
 import json
+
+old_stdout = sys.stdout
+captured_output = io.StringIO()
+sys.stdout = captured_output
+
+namespace = {}
 try:
+    exec(${JSON.stringify(code)}, namespace)
     args = (${tc.input})
     if type(args) is not tuple: args = (args,)
-    print(json.dumps(${fnName}(*args)))
+    res = namespace['${fnName}'](*args)
+    if res is not None:
+        print(json.dumps(res))
 except Exception as e:
-    print(str(e))`;
+    print(str(e))
+finally:
+    sys.stdout = old_stdout
+
+captured_output.getvalue()
+`;
+            outputStr = await pyodide.runPythonAsync(runnerCode);
           }
 
-          const response = await fetch("https://emkc.org/api/v2/piston/execute", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              language: language === 'javascript' ? 'javascript' : 'python',
-              version: "*",
-              files: [{ content: runnerCode }]
-            })
-          });
-
-          const data = await response.json();
-          if (!data.run) {
-            setExecutionOutput(prev => [...prev, `[ERROR] Test Case ${i + 1}: Piston API Error - ${data.message || JSON.stringify(data)}`]);
-            continue;
-          }
-          if (data.run.stderr) {
-            setExecutionOutput(prev => [...prev, `[ERROR] Test Case ${i + 1}: ${data.run.stderr.trim()}`]);
-            continue;
-          }
-
-          const outputStr = data.run.stdout.trim();
+          outputStr = (outputStr || "").trim();
           const normalize = (s: string) => s.replace(/\s+/g, '');
           const isCorrect = normalize(outputStr) === normalize(tc.expected) || outputStr === tc.expected;
 
@@ -370,11 +393,8 @@ except Exception as e:
             setExecutionOutput(prev => [...prev, `[FAIL] Test Case ${i + 1}: Expected ${tc.expected}, Got ${outputStr}`]);
           }
         } catch (err: any) {
-          setExecutionOutput(prev => [...prev, `[ERROR] Test Case ${i + 1}: API Error - ${err.message}`]);
+          setExecutionOutput(prev => [...prev, `[ERROR] Test Case ${i + 1}: ${err.message}`]);
         }
-        
-        // Delay 500ms to avoid Piston API rate limiting
-        await new Promise(r => setTimeout(r, 500));
       }
 
       setQuestionScores(prev => ({
