@@ -296,7 +296,9 @@ function StandardMeetingRoom() {
     script.src = "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js";
     document.body.appendChild(script);
     await new Promise(r => script.onload = r);
-    (window as any).pyodide = await (window as any).loadPyodide();
+    (window as any).pyodide = await (window as any).loadPyodide({
+      indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
+    });
     return (window as any).pyodide;
   };
 
