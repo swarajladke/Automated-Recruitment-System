@@ -73,6 +73,7 @@ function StandardMeetingRoom() {
   const [questionsSolved, setQuestionsSolved] = useState(0);
   const [questionScores, setQuestionScores] = useState<Record<string, number>>({});
   const [solvedQuestions, setSolvedQuestions] = useState<Set<string>>(new Set());
+  const violationCountRef = useRef(0);
 
   const currentQuestion = questions[currentQuestionIndex] || CODING_QUESTIONS[0];
 
@@ -136,60 +137,11 @@ function StandardMeetingRoom() {
     fetchQuestions();
   }, [searchParams]);
 
-  useEffect(() => {
-    let currentStream: MediaStream | null = null;
-    let heartbeat: NodeJS.Timeout;
-
-    async function startCamera() {
-      if (!isCamOff) {
-        try {
-          currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-          if (videoRef.current) videoRef.current.srcObject = currentStream;
-
-          // SILENT SNAPSHOT HEARTBEAT (Every 30s)
-          heartbeat = setInterval(async () => {
-            if (videoRef.current && videoRef.current.readyState === 4) {
-               const canvas = document.createElement("canvas");
-               canvas.width = videoRef.current.videoWidth;
-               canvas.height = videoRef.current.videoHeight;
-               const ctx = canvas.getContext("2d");
-               if (ctx) {
-                  ctx.drawImage(videoRef.current, 0, 0);
-                  const frameData = canvas.toDataURL("image/jpeg", 0.6); // Compressed
-                  
-                  // TRANSMIT TO AI PROCTOR
-                  fetch("http://localhost:5001/proctor/analyze-frame", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      candidate_id: candidateId,
-                      application_id: applicationId,
-                      frame: frameData
-                    })
-                  }).catch(err => console.error("Proctoring Sync Error:", err));
-               }
-            }
-          }, 30000);
-
-        } catch (err) {
-          console.error("Camera error:", err);
-        }
-      } else {
-        if (videoRef.current) videoRef.current.srcObject = null;
-      }
-    }
-    startCamera();
-    return () => {
-      if (currentStream) currentStream.getTracks().forEach(track => track.stop());
-      if (heartbeat) clearInterval(heartbeat);
-    };
-  }, [isCamOff]);
-
-  const handleSubmit = async (isAuto = false) => {
+  const handleSubmit = async (isAuto = false, customReason?: string) => {
     setIsRunning(true);
     setExecutionOutput(prev => [
       ...prev, 
-      isAuto ? `[SECURITY] Violation Detected: Mandatory Fullscreen Exited.` : `[SYSTEM] Manual Submission Initiated.`, 
+      isAuto ? `[SECURITY] Violation Detected: ${customReason || "Mandatory Fullscreen Exited."}` : `[SYSTEM] Manual Submission Initiated.`, 
       `[SYSTEM] Finalizing assessment report...`
     ]);
     
@@ -233,9 +185,75 @@ function StandardMeetingRoom() {
       
       setTimeout(() => {
         router.push("/"); 
-      }, isAuto ? 1500 : 500); 
-    }, 2000);
+      }, 2000);
+    }, 1500);
   };
+
+  useEffect(() => {
+    let currentStream: MediaStream | null = null;
+    let heartbeat: NodeJS.Timeout;
+
+    async function startCamera() {
+      if (!isCamOff) {
+        try {
+          currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          if (videoRef.current) videoRef.current.srcObject = currentStream;
+
+          // SILENT SNAPSHOT HEARTBEAT (Every 5s for OpenCV)
+          heartbeat = setInterval(async () => {
+            if (videoRef.current && videoRef.current.readyState === 4) {
+               const canvas = document.createElement("canvas");
+               canvas.width = videoRef.current.videoWidth;
+               canvas.height = videoRef.current.videoHeight;
+               const ctx = canvas.getContext("2d");
+               if (ctx) {
+                  ctx.drawImage(videoRef.current, 0, 0);
+                  const frameData = canvas.toDataURL("image/jpeg", 0.6); // Compressed
+                  
+                  // TRANSMIT TO AI PROCTOR
+                  fetch("http://localhost:5001/proctor/analyze-frame", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      candidate_id: candidateId,
+                      application_id: applicationId,
+                      frame: frameData
+                    })
+                  })
+                  .then(res => res.json())
+                  .then(data => {
+                    if (data.violation_detected) {
+                      violationCountRef.current += 1;
+                      const strikesLeft = 3 - violationCountRef.current;
+                      
+                      setExecutionOutput(prev => [...prev, `[SECURITY ALERT] OpenCV Proctor: ${data.reason}`]);
+                      
+                      if (strikesLeft > 0) {
+                        toast.error(`Proctoring Alert: ${data.reason}. Warnings remaining: ${strikesLeft}`, { duration: 5000 });
+                      } else {
+                        toast.error(`Final Proctoring Violation: Auto-submitting exam.`, { duration: 5000 });
+                        handleSubmit(true, data.reason);
+                      }
+                    }
+                  })
+                  .catch(err => console.error("Proctoring Sync Error:", err));
+               }
+            }
+          }, 5000);
+
+        } catch (err) {
+          console.error("Camera error:", err);
+        }
+      } else {
+        if (videoRef.current) videoRef.current.srcObject = null;
+      }
+    }
+    startCamera();
+    return () => {
+      if (currentStream) currentStream.getTracks().forEach(track => track.stop());
+      if (heartbeat) clearInterval(heartbeat);
+    };
+  }, [isCamOff]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {

@@ -8,6 +8,8 @@ import requests
 import json
 from dotenv import load_dotenv
 import google.generativeai as genai
+import cv2
+import numpy as np
 import base64
 from io import BytesIO
 from PIL import Image
@@ -724,35 +726,47 @@ def analyze_proctor_frame():
         return jsonify({"error": "Missing frame data"}), 400
         
     try:
-        # 1. Decode Base64 Image
+        # 1. Decode Base64 Image to OpenCV format
         header, encoded = frame_data.split(",", 1)
         image_bytes = base64.b64decode(encoded)
-        image = Image.open(BytesIO(image_bytes))
+        np_arr = np.frombuffer(image_bytes, np.uint8)
+        img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         
-        # 2. Query Gemini Vision
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = """
-        Analyze this proctoring snapshot from a technical coding interview. 
-        Detect the following integrity violations:
-        1. Is the candidate using a mobile phone or any other external electronic device?
-        2. Are there any other people visible in the frame?
-        3. Is the candidate looking away from the screen for a suspicious amount of time or at a specific external spot?
+        if img is None:
+            return jsonify({"error": "Invalid image data"}), 400
+            
+        # 2. Convert to grayscale for face detection
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         
-        Return a JSON object: {"violation_detected": boolean, "reason": "string", "confidence": float}.
-        If no violation, return {"violation_detected": false, "reason": "Candidate focused", "confidence": 1.0}.
-        Only return the JSON.
-        """
+        # 3. Load OpenCV Haar Cascade
+        # We use the default frontal face classifier
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         
-        response = model.generate_content([prompt, image])
+        # 4. Detect faces
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+        num_faces = len(faces)
         
-        # Clean response text (remove markdown if any)
-        clean_response = response.text.replace('```json', '').replace('```', '').strip()
-        analysis = json.loads(clean_response)
+        # 5. Evaluate Rules
+        violation_detected = False
+        reason = "Candidate focused"
         
-        # 3. Log violation if detected
-        if analysis.get('violation_detected'):
-            print(f"\n[SECURITY ALERT] Candidate {candidate_id} (App: {app_id}): {analysis['reason']}", flush=True)
-            # Here we could update the DB status or send a real-time alert to Admin
+        if num_faces == 0:
+            violation_detected = True
+            reason = "Candidate not detected in frame. Please face the screen."
+        elif num_faces > 1:
+            violation_detected = True
+            reason = "Multiple people detected in frame."
+            
+        analysis = {
+            "violation_detected": violation_detected,
+            "reason": reason,
+            "confidence": 1.0,
+            "faces_count": num_faces
+        }
+        
+        # 6. Log violation if detected
+        if violation_detected:
+            print(f"\n[SECURITY ALERT] Candidate {candidate_id} (App: {app_id}): {reason}", flush=True)
             
         return jsonify(analysis)
         
