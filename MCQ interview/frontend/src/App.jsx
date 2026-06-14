@@ -164,6 +164,18 @@ function App() {
         reason: customReason
       });
       setStep('result');
+      // Auto-sync security fail
+      fetch('http://localhost:5001/receive-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          candidate_id: candidateId,
+          application_id: applicationId,
+          module: 'mcq',
+          score: 0,
+          violations_count: violationCountRef.current
+        })
+      }).catch(err => console.error(err));
       return;
     }
     
@@ -194,7 +206,8 @@ function App() {
           candidate_id: candidateId,
           application_id: applicationId,
           module: 'mcq',
-          score: result.percentage
+          score: result.percentage,
+          violations_count: violationCountRef.current
         })
       });
       setStep('integration_success');

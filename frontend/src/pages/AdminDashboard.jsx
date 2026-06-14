@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, RefreshCw, Filter, MoreVertical, 
   Download, ExternalLink, UserCheck, UserX,
-  ChevronRight, X, Briefcase, Sparkles, MessageSquare, Send, PieChart
+  ChevronRight, X, Briefcase, Sparkles, MessageSquare, Send, PieChart, ShieldAlert
 } from 'lucide-react';
 
 import { adminService, messageService } from '../services/api';
@@ -1135,6 +1135,34 @@ const AdminDashboard = () => {
                 </div>
               )}
             </div>
+
+            {/* Proctoring Report */}
+            {selectedCandidate.proctoring && (
+              <div style={{ marginBottom: '2rem', padding: '1.5rem', borderRadius: '1rem', background: (selectedCandidate.proctoring.mcq_violations > 0 || selectedCandidate.proctoring.coding_violations > 0) ? '#fef2f2' : '#f0fdf4', border: (selectedCandidate.proctoring.mcq_violations > 0 || selectedCandidate.proctoring.coding_violations > 0) ? '1px solid #fee2e2' : '1px solid #d1fae5' }}>
+                <div style={{ fontSize: '0.8rem', color: (selectedCandidate.proctoring.mcq_violations > 0 || selectedCandidate.proctoring.coding_violations > 0) ? '#b91c1c' : '#059669', marginBottom: '1.25rem', textTransform: 'uppercase', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <ShieldAlert size={16} /> Security & Proctoring Report
+                </div>
+                <div style={{ display: 'flex', gap: '2rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>MCQ Violations</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: '900', color: selectedCandidate.proctoring.mcq_violations > 0 ? '#dc2626' : '#10b981' }}>
+                      {selectedCandidate.proctoring.mcq_violations}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Coding Violations</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: '900', color: selectedCandidate.proctoring.coding_violations > 0 ? '#dc2626' : '#10b981' }}>
+                      {selectedCandidate.proctoring.coding_violations}
+                    </div>
+                  </div>
+                </div>
+                {(selectedCandidate.proctoring.mcq_violations > 0 || selectedCandidate.proctoring.coding_violations > 0) && (
+                  <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#991b1b', fontWeight: '600' }}>
+                    Warning: Candidate triggered security rules during their assessment.
+                  </div>
+                )}
+              </div>
+            )}
 
             <div style={{ marginBottom: '2rem', padding: '1.5rem', borderRadius: '1rem', background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)', border: '1px solid #d1fae5' }}>
               <div style={{ fontSize: '0.8rem', color: '#059669', marginBottom: '1.25rem', textTransform: 'uppercase', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

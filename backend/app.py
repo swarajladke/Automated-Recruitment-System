@@ -57,6 +57,8 @@ class Application(db.Model):
     interview_time = db.Column(db.String(100)) # Stores scheduled time (e.g., "May 20, 2:00 PM")
     resume_url = db.Column(db.String(200))
     resume_data = db.Column(db.JSON)
+    mcq_violations = db.Column(db.Integer, default=0)
+    coding_violations = db.Column(db.Integer, default=0)
     applied_date = db.Column(db.DateTime, default=db.func.current_timestamp())
 
 @app.route('/admin/schedule-interview', methods=['POST'])
@@ -204,10 +206,14 @@ def receive_score():
     if not app_record:
         return jsonify({'message': 'Application not found'}), 404
     
+    # Extract violations count if provided
+    violations_count = data.get('violations_count', 0)
+    
     # Handle detailed coding scores
     if 'questions_solved' in data:
         app_record.questions_solved = data.get('questions_solved', 0)
         app_record.test_cases_cleared = data.get('test_cases_cleared', 0)
+        app_record.coding_violations = violations_count
         
         # GRANULAR SCORING: Total Test Cases cleared / Total available
         total_tc = data.get('total_test_cases', 10) # Fallback to 10 if not provided
@@ -218,12 +224,14 @@ def receive_score():
     # Legacy module support
     elif module == 'mcq':
         app_record.mcq_score = score
+        app_record.mcq_violations = violations_count
         app_record.status = 'MCQ_CLEARED' if score >= 60 else 'REJECTED'
     elif module == 'ai':
         app_record.ai_score = score
         app_record.status = 'AI_CLEARED' if score >= 60 else 'REJECTED'
     elif module == 'coding':
         app_record.coding_score = score
+        app_record.coding_violations = violations_count
         app_record.status = 'CODING_CLEARED' if score >= 60 else 'REJECTED'
             
     db.session.commit()
@@ -413,7 +421,11 @@ def get_all_candidates():
                 }
             },
             'interview_time': a.interview_time,
-            'resume_insight': a.resume_data
+            'resume_insight': a.resume_data,
+            'proctoring': {
+                'mcq_violations': getattr(a, 'mcq_violations', 0),
+                'coding_violations': getattr(a, 'coding_violations', 0)
+            }
         })
     return jsonify(result)
 

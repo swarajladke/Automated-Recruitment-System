@@ -160,6 +160,7 @@ function StandardMeetingRoom() {
       total_test_cases: totalAvailableTestCases,
       total_questions: questions.length,
       submission_type: isAuto ? "AUTOMATIC" : "MANUAL",
+      violations_count: violationCountRef.current,
       status: "Completed"
     };
 
