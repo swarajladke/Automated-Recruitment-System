@@ -543,9 +543,9 @@ const ApplicationLevelCard = ({ currentStageIndex, stages, isRejected, status, s
 
   let rejectionStageText = 'ATS Screening';
   if (isRejected && scores) {
-    if (scores.coding_score != null) rejectionStageText = 'Coding Interview';
-    else if (scores.ai_interview != null) rejectionStageText = 'AI Interview';
-    else if (scores.mcq_score != null) rejectionStageText = 'MCQ Assessment';
+    if (scores.coding > 0) rejectionStageText = 'Coding Interview';
+    else if (scores.ai > 0) rejectionStageText = 'AI Interview';
+    else if (scores.mcq > 0) rejectionStageText = 'MCQ Assessment';
   }
 
   return (
