@@ -411,6 +411,7 @@ const CandidateDashboard = () => {
               stages={RECRUITMENT_STAGES}
               isRejected={isRejected}
               status={selectedApp.status}
+              scores={selectedApp.scores}
             />
           </aside>
         </div>
@@ -536,9 +537,16 @@ const WelcomeHero = ({ userName, currentStage, isRejected, status }) => {
   );
 };
 
-const ApplicationLevelCard = ({ currentStageIndex, stages, isRejected, status }) => {
+const ApplicationLevelCard = ({ currentStageIndex, stages, isRejected, status, scores }) => {
   const stageNum = isRejected ? 0 : currentStageIndex + 1;
   const isSelected = status === 'SELECTED';
+
+  let rejectionStageText = 'ATS Screening';
+  if (isRejected && scores) {
+    if (scores.coding_score != null) rejectionStageText = 'Coding Interview';
+    else if (scores.ai_interview != null) rejectionStageText = 'AI Interview';
+    else if (scores.mcq_score != null) rejectionStageText = 'MCQ Assessment';
+  }
 
   return (
     <Card style={{ padding: '1.5rem' }}>
@@ -561,7 +569,7 @@ const ApplicationLevelCard = ({ currentStageIndex, stages, isRejected, status })
               {isSelected ? 'Hiring Complete' : isRejected ? 'Process Ended' : stages[currentStageIndex]}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-              {isSelected ? 'Welcome to the team!' : isRejected ? 'ATS Screening' : `Step ${stageNum} of 5`}
+              {isSelected ? 'Welcome to the team!' : isRejected ? rejectionStageText : `Step ${stageNum} of 5`}
             </div>
           </div>
         </div>
